@@ -5,6 +5,7 @@ import '../entities/product_entity.dart';
 import '../entities/review_entity.dart';
 import '../entities/category_entity.dart';
 import '../entities/alert_entity.dart';
+import '../entities/account_delete_request_entity.dart';
 
 abstract class DashboardRepository {
   Future<Either<Failure, List<ProductEntity>>> getProducts({
@@ -71,5 +72,38 @@ abstract class DashboardRepository {
     required int category,
     String? duration,
     List<String>? images,
+  });
+
+  /// Account delete requests
+  Future<Either<Failure, List<AccountDeleteRequestEntity>>>
+      getAccountDeleteRequests();
+
+  Future<Either<Failure, AccountDeleteRequestEntity>> createAccountDeleteRequest({
+    String? reason,
+  });
+
+  Future<Either<Failure, AccountDeleteRequestEntity>> getAccountDeleteRequest({
+    required int id,
+  });
+
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      updateAccountDeleteRequest({
+    required int id,
+    String? reason,
+    String? status,
+  });
+
+  Future<Either<Failure, void>> deleteAccountDeleteRequest({
+    required int id,
+  });
+
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      approveAccountDeleteRequest({
+    required int id,
+  });
+
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      rejectAccountDeleteRequest({
+    required int id,
   });
 }

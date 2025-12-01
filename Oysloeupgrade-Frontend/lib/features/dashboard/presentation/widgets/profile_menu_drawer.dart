@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:oysloe_mobile/core/common/widgets/app_snackbar.dart';
@@ -13,6 +14,8 @@ import 'package:oysloe_mobile/core/usecase/usecase.dart';
 import 'package:oysloe_mobile/features/auth/domain/entities/auth_entity.dart';
 import 'package:oysloe_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:oysloe_mobile/features/auth/domain/usecases/logout_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/account_delete/account_delete_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/account_delete/account_delete_state.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 
 /// A right-side drawer shown when tapping the Profile tab.
@@ -279,6 +282,23 @@ class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
                   });
                 },
               ),
+              _MenuTile(
+                iconPath: 'assets/icons/delete_icon.png',
+                title: 'Delete my account',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    builder: (sheetContext) {
+                      return const _AccountDeleteRequestSheet();
+                    },
+                  );
+                },
+              ),
               SizedBox(height: 2.h),
             ],
           ),
@@ -500,6 +520,157 @@ class _MenuTile extends StatelessWidget {
       ),
       title: Text(title, style: AppTypography.body),
       onTap: onTap,
+    );
+  }
+}
+
+class _AccountDeleteRequestSheet extends StatefulWidget {
+  const _AccountDeleteRequestSheet();
+
+  @override
+  State<_AccountDeleteRequestSheet> createState() =>
+      _AccountDeleteRequestSheetState();
+}
+
+class _AccountDeleteRequestSheetState
+    extends State<_AccountDeleteRequestSheet> {
+  final TextEditingController _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => sl<AccountDeleteCubit>()..loadRequests(),
+      child: BlocConsumer<AccountDeleteCubit, AccountDeleteState>(
+        listener: (context, state) {
+          if (state.message != null && state.message!.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message!)),
+            );
+          }
+        },
+        builder: (context, state) {
+          final cubit = context.read<AccountDeleteCubit>();
+          final padding = MediaQuery.of(context).viewInsets;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: padding.bottom + 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Delete account',
+                      style: AppTypography.bodyLarge,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This will send a request to permanently delete your account. '
+                  'Our team will review and process it according to our policies.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.blueGray263238.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _reasonController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Reason (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () async {
+                            await cubit.submitDeleteRequest(
+                              reason: _reasonController.text.trim().isEmpty
+                                  ? null
+                                  : _reasonController.text.trim(),
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
+                    child: state.isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Submit delete request'),
+                  ),
+                ),
+                if (state.requests.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Previous requests',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 120,
+                    child: ListView.separated(
+                      itemCount: state.requests.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 4),
+                      itemBuilder: (context, index) {
+                        final req = state.requests[index];
+                        return ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            req.status,
+                            style: AppTypography.bodySmall,
+                          ),
+                          subtitle: req.reason != null &&
+                                  req.reason!.trim().isNotEmpty
+                              ? Text(
+                                  req.reason!,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.blueGray263238
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                )
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

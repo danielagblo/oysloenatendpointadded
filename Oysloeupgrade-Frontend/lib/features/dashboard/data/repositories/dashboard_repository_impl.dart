@@ -9,10 +9,12 @@ import '../../domain/repositories/dashboard_repository.dart';
 import '../../domain/entities/review_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/alert_entity.dart';
+import '../../domain/entities/account_delete_request_entity.dart';
 import '../datasources/products_remote_data_source.dart';
 import '../datasources/categories_remote_data_source.dart';
 import '../datasources/categories_local_data_source.dart';
 import '../datasources/alerts_remote_data_source.dart';
+import '../datasources/account_delete_requests_remote_data_source.dart';
 import '../models/category_model.dart';
 import '../models/alert_model.dart';
 
@@ -23,17 +25,217 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required CategoriesRemoteDataSource categoriesRemoteDataSource,
     required CategoriesLocalDataSource categoriesLocalDataSource,
     required AlertsRemoteDataSource alertsRemoteDataSource,
+    required AccountDeleteRequestsRemoteDataSource
+        accountDeleteRequestsRemoteDataSource,
     required Network network,
   })  : _remoteDataSource = remoteDataSource,
         _categoriesRemoteDataSource = categoriesRemoteDataSource,
         _categoriesLocalDataSource = categoriesLocalDataSource,
         _alertsRemoteDataSource = alertsRemoteDataSource,
+        _accountDeleteRequestsRemoteDataSource =
+            accountDeleteRequestsRemoteDataSource,
         _network = network;
 
   final ProductsRemoteDataSource _remoteDataSource;
   final CategoriesRemoteDataSource _categoriesRemoteDataSource;
   final CategoriesLocalDataSource _categoriesLocalDataSource;
   final AlertsRemoteDataSource _alertsRemoteDataSource;
+  final AccountDeleteRequestsRemoteDataSource
+      _accountDeleteRequestsRemoteDataSource;
+
+  @override
+  Future<Either<Failure, List<AccountDeleteRequestEntity>>>
+      getAccountDeleteRequests() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<AccountDeleteRequestEntity> items =
+          (await _accountDeleteRequestsRemoteDataSource.getRequests())
+              .cast<AccountDeleteRequestEntity>();
+      return right(items);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected account delete requests fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      createAccountDeleteRequest({String? reason}) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final AccountDeleteRequestEntity item =
+          await _accountDeleteRequestsRemoteDataSource.createRequest(
+        reason: reason,
+      );
+      return right(item);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected create account delete request failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AccountDeleteRequestEntity>> getAccountDeleteRequest({
+    required int id,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final AccountDeleteRequestEntity item =
+          await _accountDeleteRequestsRemoteDataSource.getRequest(id);
+      return right(item);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected get account delete request failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      updateAccountDeleteRequest({
+    required int id,
+    String? reason,
+    String? status,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final AccountDeleteRequestEntity item =
+          await _accountDeleteRequestsRemoteDataSource.updateRequest(
+        id,
+        reason: reason,
+        status: status,
+      );
+      return right(item);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected update account delete request failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteAccountDeleteRequest({
+    required int id,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      await _accountDeleteRequestsRemoteDataSource.deleteRequest(id);
+      return right(null);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected delete account delete request failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      approveAccountDeleteRequest({required int id}) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final AccountDeleteRequestEntity item =
+          await _accountDeleteRequestsRemoteDataSource.approveRequest(id);
+      return right(item);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected approve account delete request failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      rejectAccountDeleteRequest({required int id}) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final AccountDeleteRequestEntity item =
+          await _accountDeleteRequestsRemoteDataSource.rejectRequest(id);
+      return right(item);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected reject account delete request failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
   final Network _network;
 
   @override

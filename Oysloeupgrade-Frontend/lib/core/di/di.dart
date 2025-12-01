@@ -113,12 +113,16 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<AlertsRemoteDataSource>(
       () => AlertsRemoteDataSourceImpl(client: sl()),
     )
+    ..registerLazySingleton<AccountDeleteRequestsRemoteDataSource>(
+      () => AccountDeleteRequestsRemoteDataSourceImpl(client: sl()),
+    )
     ..registerLazySingleton<DashboardRepository>(
       () => DashboardRepositoryImpl(
         remoteDataSource: sl(),
         categoriesRemoteDataSource: sl(),
         categoriesLocalDataSource: sl(),
         alertsRemoteDataSource: sl(),
+        accountDeleteRequestsRemoteDataSource: sl(),
         network: sl(),
       ),
     )
@@ -164,6 +168,27 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<CreateProductUseCase>(
       () => CreateProductUseCase(sl()),
     )
+    ..registerLazySingleton<GetAccountDeleteRequestsUseCase>(
+      () => GetAccountDeleteRequestsUseCase(sl()),
+    )
+    ..registerLazySingleton<CreateAccountDeleteRequestUseCase>(
+      () => CreateAccountDeleteRequestUseCase(sl()),
+    )
+    ..registerLazySingleton<GetAccountDeleteRequestUseCase>(
+      () => GetAccountDeleteRequestUseCase(sl()),
+    )
+    ..registerLazySingleton<UpdateAccountDeleteRequestUseCase>(
+      () => UpdateAccountDeleteRequestUseCase(sl()),
+    )
+    ..registerLazySingleton<DeleteAccountDeleteRequestUseCase>(
+      () => DeleteAccountDeleteRequestUseCase(sl()),
+    )
+    ..registerLazySingleton<ApproveAccountDeleteRequestUseCase>(
+      () => ApproveAccountDeleteRequestUseCase(sl()),
+    )
+    ..registerLazySingleton<RejectAccountDeleteRequestUseCase>(
+      () => RejectAccountDeleteRequestUseCase(sl()),
+    )
     ..registerFactory<ProductsCubit>(
       () => ProductsCubit(sl(), sl()),
     )
@@ -172,6 +197,12 @@ Future<void> _initDashboard() async {
     )
     ..registerFactory<AlertsCubit>(
       () => AlertsCubit(sl(), sl(), sl()),
+    )
+    ..registerFactory<AccountDeleteCubit>(
+      () => AccountDeleteCubit(
+        sl<GetAccountDeleteRequestsUseCase>(),
+        sl<CreateAccountDeleteRequestUseCase>(),
+      ),
     )
     ..registerFactory<ProfileCubit>(
       () => ProfileCubit(
