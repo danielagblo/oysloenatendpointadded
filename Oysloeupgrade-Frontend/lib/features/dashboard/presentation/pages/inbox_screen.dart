@@ -158,12 +158,15 @@ class _InboxScreenState extends State<InboxScreen> {
       );
     }
 
-    if (state.rooms.isEmpty) {
+    final List<ChatRoomEntity> userRooms =
+        state.rooms.where((ChatRoomEntity r) => !r.isSupport).toList();
+
+    if (userRooms.isEmpty) {
       return _buildEmptyState();
     }
 
     return Column(
-      children: state.rooms
+      children: userRooms
           .map<Widget>(
             (ChatRoomEntity room) => _buildChatItem(
               chatId: room.id,
@@ -180,7 +183,13 @@ class _InboxScreenState extends State<InboxScreen> {
   }
 
   Widget _buildSupportTab() {
-    return Column(
+    return BlocBuilder<ChatListCubit, ChatListState>(
+      builder: (context, state) {
+        final List<ChatRoomEntity> supportRooms = state.rooms
+            .where((ChatRoomEntity r) => r.isSupport)
+            .toList();
+
+        return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
@@ -245,54 +254,41 @@ class _InboxScreenState extends State<InboxScreen> {
             ),
           ),
         ),
-        Padding(
-          padding: EdgeInsets.only(left: 16, right: 16, top: 3.h),
-          child: Text(
-            'Open Case',
-            style: AppTypography.body.copyWith(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.blueGray374957,
+        if (supportRooms.isEmpty) ...[
+          SizedBox(height: 4.h),
+          _buildEmptyState(),
+        ] else ...[
+          Padding(
+            padding: EdgeInsets.only(left: 16, right: 16, top: 3.h),
+            child: Text(
+              'Support chats',
+              style: AppTypography.body.copyWith(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blueGray374957,
+              ),
             ),
           ),
-        ),
-        SizedBox(height: 16),
-        _buildSupportCases(),
+          SizedBox(height: 16),
+          Column(
+            children: supportRooms
+                .map<Widget>(
+                  (ChatRoomEntity room) => _buildChatItem(
+                    chatId: room.id,
+                    name: room.otherUserName,
+                    message: room.lastMessage ?? 'Support message',
+                    time: _formatChatTime(room.lastMessageAt),
+                    avatar: room.otherUserAvatar ?? '',
+                    isUnread: room.unreadCount > 0,
+                    isClosed: false,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
       ],
     );
-  }
-
-  Widget _buildSupportCases() {
-    // bool hasCases = true;
-
-    // if (!hasCases) {
-    //   return _buildEmptyState();
-    // }
-
-    return Column(
-      children: [
-        _buildSupportCase(
-          date: 'Aug 21, 2025',
-          caseId: 'Support: S678432',
-          status: 'Active',
-          statusColor: AppColors.primary,
-          isUnread: true,
-        ),
-        _buildSupportCase(
-          date: 'Aug 21, 2025',
-          caseId: 'Support: S678432',
-          status: 'Active',
-          statusColor: AppColors.primary,
-          isUnread: false,
-        ),
-        _buildSupportCase(
-          date: 'Aug 21, 2025',
-          caseId: 'Support: S678432',
-          status: 'Closed',
-          statusColor: AppColors.redFF6B6B,
-          isUnread: false,
-        ),
-      ],
+      },
     );
   }
 

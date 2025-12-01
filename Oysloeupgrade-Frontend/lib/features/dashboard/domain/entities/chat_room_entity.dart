@@ -7,6 +7,7 @@ class ChatRoomEntity {
     this.lastMessage,
     this.lastMessageAt,
     this.unreadCount = 0,
+    this.isSupport = false,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class ChatRoomEntity {
   final String? lastMessage;
   final DateTime? lastMessageAt;
   final int unreadCount;
+  final bool isSupport;
 }
 
 

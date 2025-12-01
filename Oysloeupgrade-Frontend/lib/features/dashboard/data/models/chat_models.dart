@@ -10,6 +10,7 @@ class ChatRoomModel extends ChatRoomEntity {
     super.lastMessage,
     super.lastMessageAt,
     super.unreadCount,
+    super.isSupport,
   });
 
   factory ChatRoomModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +26,8 @@ class ChatRoomModel extends ChatRoomEntity {
       unreadCount: json['unread_count'] is int
           ? json['unread_count'] as int
           : int.tryParse('${json['unread_count']}') ?? 0,
+      isSupport: json['is_support'] == true ||
+          (json['kind']?.toString().toLowerCase() == 'support'),
     );
   }
 }
