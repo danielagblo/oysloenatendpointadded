@@ -1,0 +1,6 @@
+2025/12/01-12:38:26.693 1948 Reusing MANIFEST C:\Users\judeb\AppData\Local\Temp\flutter_tools.a3f26fc2\flutter_tools_chrome_device.d21b8e0f\Default\shared_proto_db/MANIFEST-000001
+2025/12/01-12:38:26.694 1948 Recovering log #3
+2025/12/01-12:38:26.695 1948 (ignoring error) C:\Users\judeb\AppData\Local\Temp\flutter_tools.a3f26fc2\flutter_tools_chrome_device.d21b8e0f\Default\shared_proto_db/000003.log: dropping 16473 bytes; Corruption: checksum mismatch
+2025/12/01-12:38:26.695 1948 (ignoring error) C:\Users\judeb\AppData\Local\Temp\flutter_tools.a3f26fc2\flutter_tools_chrome_device.d21b8e0f\Default\shared_proto_db/000003.log: dropping 32768 bytes; Corruption: checksum mismatch
+2025/12/01-12:38:26.696 1948 (ignoring error) C:\Users\judeb\AppData\Local\Temp\flutter_tools.a3f26fc2\flutter_tools_chrome_device.d21b8e0f\Default\shared_proto_db/000003.log: dropping 287 bytes; Corruption: missing start of fragmented record(2)
+2025/12/01-12:38:26.697 1948 Reusing old log C:\Users\judeb\AppData\Local\Temp\flutter_tools.a3f26fc2\flutter_tools_chrome_device.d21b8e0f\Default\shared_proto_db/000003.log 

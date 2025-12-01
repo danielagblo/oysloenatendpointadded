@@ -1,0 +1,4 @@
+2025/12/01-12:10:24.904 60d0 Reusing MANIFEST C:\Users\judeb\AppData\Local\Temp\flutter_tools.b9ce9544\flutter_tools_chrome_device.81b0800\Default\shared_proto_db/MANIFEST-000001
+2025/12/01-12:10:24.905 60d0 Recovering log #3
+2025/12/01-12:10:24.906 60d0 (ignoring error) C:\Users\judeb\AppData\Local\Temp\flutter_tools.b9ce9544\flutter_tools_chrome_device.81b0800\Default\shared_proto_db/000003.log: dropping 16473 bytes; Corruption: checksum mismatch
+2025/12/01-12:10:24.906 60d0 Reusing old log C:\Users\judeb\AppData\Local\Temp\flutter_tools.b9ce9544\flutter_tools_chrome_device.81b0800\Default\shared_proto_db/000003.log 
