@@ -10,11 +10,14 @@ import '../../domain/entities/review_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/alert_entity.dart';
 import '../../domain/entities/account_delete_request_entity.dart';
+import '../../domain/entities/chat_room_entity.dart';
+import '../../domain/entities/chat_message_entity.dart';
 import '../datasources/products_remote_data_source.dart';
 import '../datasources/categories_remote_data_source.dart';
 import '../datasources/categories_local_data_source.dart';
 import '../datasources/alerts_remote_data_source.dart';
 import '../datasources/account_delete_requests_remote_data_source.dart';
+import '../datasources/chat_remote_data_source.dart';
 import '../models/category_model.dart';
 import '../models/alert_model.dart';
 
@@ -27,6 +30,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required AlertsRemoteDataSource alertsRemoteDataSource,
     required AccountDeleteRequestsRemoteDataSource
         accountDeleteRequestsRemoteDataSource,
+    required ChatRemoteDataSource chatRemoteDataSource,
     required Network network,
   })  : _remoteDataSource = remoteDataSource,
         _categoriesRemoteDataSource = categoriesRemoteDataSource,
@@ -34,6 +38,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
         _alertsRemoteDataSource = alertsRemoteDataSource,
         _accountDeleteRequestsRemoteDataSource =
             accountDeleteRequestsRemoteDataSource,
+        _chatRemoteDataSource = chatRemoteDataSource,
         _network = network;
 
   final ProductsRemoteDataSource _remoteDataSource;
@@ -42,6 +47,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   final AlertsRemoteDataSource _alertsRemoteDataSource;
   final AccountDeleteRequestsRemoteDataSource
       _accountDeleteRequestsRemoteDataSource;
+  final ChatRemoteDataSource _chatRemoteDataSource;
 
   @override
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>
@@ -237,6 +243,116 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
   }
   final Network _network;
+
+  @override
+  Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<ChatRoomEntity> rooms =
+          (await _chatRemoteDataSource.getChatRooms()).cast<ChatRoomEntity>();
+      return right(rooms);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected chat rooms fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ChatMessageEntity>>> getChatMessages({
+    required String chatRoomId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<ChatMessageEntity> messages =
+          (await _chatRemoteDataSource.getMessages(chatRoomId: chatRoomId))
+              .cast<ChatMessageEntity>();
+      return right(messages);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected chat messages fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ChatMessageEntity>> sendChatMessage({
+    required String chatRoomId,
+    required String text,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final ChatMessageEntity message =
+          await _chatRemoteDataSource.sendMessage(
+        chatRoomId: chatRoomId,
+        text: text,
+      );
+      return right(message);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected send chat message failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> markChatRoomRead({
+    required String chatRoomId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      await _chatRemoteDataSource.markChatRoomRead(chatRoomId: chatRoomId);
+      return right(null);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected mark chat room read failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
 
   @override
   Future<Either<Failure, List<ProductEntity>>> getProducts({

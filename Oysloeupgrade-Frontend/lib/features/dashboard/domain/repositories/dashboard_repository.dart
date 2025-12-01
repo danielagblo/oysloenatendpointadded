@@ -6,6 +6,9 @@ import '../entities/review_entity.dart';
 import '../entities/category_entity.dart';
 import '../entities/alert_entity.dart';
 import '../entities/account_delete_request_entity.dart';
+import '../entities/chat_room_entity.dart';
+import '../entities/chat_message_entity.dart';
+import '../entities/account_delete_request_entity.dart';
 
 abstract class DashboardRepository {
   Future<Either<Failure, List<ProductEntity>>> getProducts({
@@ -75,6 +78,8 @@ abstract class DashboardRepository {
   });
 
   /// Account delete requests
+
+  /// Account delete requests
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>
       getAccountDeleteRequests();
 
@@ -105,5 +110,21 @@ abstract class DashboardRepository {
   Future<Either<Failure, AccountDeleteRequestEntity>>
       rejectAccountDeleteRequest({
     required int id,
+  });
+
+  /// Chat
+  Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms();
+
+  Future<Either<Failure, List<ChatMessageEntity>>> getChatMessages({
+    required String chatRoomId,
+  });
+
+  Future<Either<Failure, ChatMessageEntity>> sendChatMessage({
+    required String chatRoomId,
+    required String text,
+  });
+
+  Future<Either<Failure, void>> markChatRoomRead({
+    required String chatRoomId,
   });
 }

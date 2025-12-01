@@ -56,5 +56,17 @@ class AppStrings {
       '$apiBasePath/account-delete-requests/$id/approve/';
   static String accountDeleteRequestRejectURL(String id) =>
       '$apiBasePath/account-delete-requests/$id/reject/';
+
+  // Chat
+  static const String chatRoomIdURL = '$apiBasePath/chatroomid/';
+  static const String chatRoomsURL = '$apiBasePath/chatrooms/';
+  static String chatRoomDetailURL(String id) =>
+      '$apiBasePath/chatrooms/$id/';
+  static String chatRoomMarkReadURL(String id) =>
+      '$apiBasePath/chatrooms/$id/mark-read/';
+  static String chatRoomMessagesURL(String id) =>
+      '$apiBasePath/chatrooms/$id/messages/';
+  static String chatRoomSendMessageURL(String id) =>
+      '$apiBasePath/chatrooms/$id/send/';
   // TODO: add the remaining endpoints from the schema as they are implemented.
 }

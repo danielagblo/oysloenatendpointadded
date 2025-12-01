@@ -116,6 +116,9 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<AccountDeleteRequestsRemoteDataSource>(
       () => AccountDeleteRequestsRemoteDataSourceImpl(client: sl()),
     )
+    ..registerLazySingleton<ChatRemoteDataSource>(
+      () => ChatRemoteDataSourceImpl(client: sl()),
+    )
     ..registerLazySingleton<DashboardRepository>(
       () => DashboardRepositoryImpl(
         remoteDataSource: sl(),
@@ -123,6 +126,7 @@ Future<void> _initDashboard() async {
         categoriesLocalDataSource: sl(),
         alertsRemoteDataSource: sl(),
         accountDeleteRequestsRemoteDataSource: sl(),
+        chatRemoteDataSource: sl(),
         network: sl(),
       ),
     )
@@ -189,8 +193,27 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<RejectAccountDeleteRequestUseCase>(
       () => RejectAccountDeleteRequestUseCase(sl()),
     )
+    ..registerLazySingleton<GetChatRoomsUseCase>(
+      () => GetChatRoomsUseCase(sl()),
+    )
+    ..registerLazySingleton<GetChatMessagesUseCase>(
+      () => GetChatMessagesUseCase(sl()),
+    )
+    ..registerLazySingleton<SendChatMessageUseCase>(
+      () => SendChatMessageUseCase(sl()),
+    )
+    ..registerLazySingleton<MarkChatRoomReadUseCase>(
+      () => MarkChatRoomReadUseCase(sl()),
+    )
     ..registerFactory<ProductsCubit>(
       () => ProductsCubit(sl(), sl()),
+    )
+    ..registerFactory<ChatCubit>(
+      () => ChatCubit(
+        sl<GetChatMessagesUseCase>(),
+        sl<SendChatMessageUseCase>(),
+        sl<MarkChatRoomReadUseCase>(),
+      ),
     )
     ..registerFactory<CategoriesCubit>(
       () => CategoriesCubit(sl()),

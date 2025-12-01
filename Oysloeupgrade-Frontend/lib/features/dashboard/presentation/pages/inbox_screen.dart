@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
 import 'package:oysloe_mobile/core/routes/routes.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/chat_room_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/chat_usecases.dart';
+import 'inbox_chat_list_cubit.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -25,18 +31,27 @@ class _InboxScreenState extends State<InboxScreen> {
         backgroundColor: AppColors.white,
         title: 'Inbox',
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildTabBar(),
-            selectedTab == 0 ? _buildChatTab() : _buildSupportTab(),
-          ],
+      body: BlocProvider(
+        create: (_) => ChatListCubit(sl<GetChatRoomsUseCase>())..load(),
+        child: BlocBuilder<ChatListCubit, ChatListState>(
+          builder: (context, chatState) {
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildTabBar(unreadCount: chatState.totalUnread),
+                  selectedTab == 0
+                      ? _buildChatTab(context, chatState)
+                      : _buildSupportTab(),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar({int unreadCount = 0}) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 3.h, horizontal: 6.w),
       decoration: BoxDecoration(
@@ -49,7 +64,7 @@ class _InboxScreenState extends State<InboxScreen> {
             child: _buildTabButton(
               title: 'Chat',
               isSelected: selectedTab == 0,
-              unreadCount: 9,
+              unreadCount: unreadCount,
               onTap: () => setState(() => selectedTab = 0),
             ),
           ),
@@ -135,52 +150,32 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
-  Widget _buildChatTab() {
-    // bool hasChats = true;
+  Widget _buildChatTab(BuildContext context, ChatListState state) {
+    if (state.loading) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 32),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-    // if (!hasChats) {
-    //   return _buildEmptyState();
-    // }
+    if (state.rooms.isEmpty) {
+      return _buildEmptyState();
+    }
 
     return Column(
-      children: [
-        _buildChatItem(
-          chatId: 'chat_1',
-          name: 'iphone 14 pro max',
-          message: 'is the iphone 15 pro max  today...',
-          time: 'today',
-          avatar: 'assets/images/ad5.jpg',
-          isUnread: true,
-          isClosed: true,
-        ),
-        _buildChatItem(
-          chatId: 'chat_2',
-          name: 'iphone 14 pro max',
-          message: 'is the iphone 15 pro max  today...',
-          time: 'today',
-          avatar: 'assets/images/ad5.jpg',
-          isUnread: true,
-          isClosed: false,
-        ),
-        _buildChatItem(
-          chatId: 'chat_3',
-          name: 'iphone 14 pro max',
-          message: 'is the iphone 15 pro max  today...',
-          time: 'today',
-          avatar: 'assets/images/ad5.jpg',
-          isUnread: true,
-          isClosed: false,
-        ),
-        _buildChatItem(
-          chatId: 'chat_4',
-          name: 'iphone 14 pro max',
-          message: 'is the iphone 15 pro max  today...',
-          time: 'today',
-          avatar: 'assets/images/ad5.jpg',
-          isUnread: false,
-          isClosed: false,
-        ),
-      ],
+      children: state.rooms
+          .map<Widget>(
+            (ChatRoomEntity room) => _buildChatItem(
+              chatId: room.id,
+              name: room.otherUserName,
+              message: room.lastMessage ?? 'Start chatting',
+              time: _formatChatTime(room.lastMessageAt),
+              avatar: room.otherUserAvatar ?? '',
+              isUnread: room.unreadCount > 0,
+              isClosed: false,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -336,12 +331,18 @@ class _InboxScreenState extends State<InboxScreen> {
               width: 6.8.h,
               height: 6.h,
               decoration: BoxDecoration(
-                  shape: BoxShape.rectangle,
-                  image: DecorationImage(
-                    image: AssetImage(avatar),
-                    fit: BoxFit.cover,
-                  ),
-                  borderRadius: BorderRadius.circular(10)),
+                shape: BoxShape.rectangle,
+                image: avatar.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(avatar),
+                        fit: BoxFit.cover,
+                      )
+                    : const DecorationImage(
+                        image: AssetImage('assets/images/default_user.svg'),
+                        fit: BoxFit.cover,
+                      ),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             SizedBox(width: 2.w),
             Expanded(
@@ -459,27 +460,43 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
-  // Widget _buildEmptyState() {
-  //   return Center(
-  //     child: Column(
-  //       mainAxisAlignment: MainAxisAlignment.center,
-  //       children: [
-  //         SvgPicture.asset(
-  //           'assets/icons/no_data.svg',
-  //           width: 80,
-  //           height: 80,
-  //         ),
-  //         SizedBox(height: 16),
-  //         Text(
-  //           'No data to show',
-  //           style: AppTypography.body.copyWith(
-  //             fontSize: 16.sp,
-  //             fontWeight: FontWeight.w600,
-  //             color: AppColors.blueGray374957,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: EdgeInsets.only(top: 10.h),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              'assets/icons/no_data.svg',
+              width: 80,
+              height: 80,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No chats yet',
+              style: AppTypography.body.copyWith(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blueGray374957,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatChatTime(DateTime? dateTime) {
+    if (dateTime == null) return '';
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    if (difference.inDays == 0) {
+      return DateFormat('HH:mm').format(dateTime);
+    }
+    if (difference.inDays == 1) {
+      return 'Yesterday';
+    }
+    return DateFormat('d MMM').format(dateTime);
+  }
 }

@@ -2,41 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/chat_message_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/chat/chat_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/chat/chat_state.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:uuid/uuid.dart';
 
 // Message Model
-class ChatMessage {
-  final String id;
-  final String text;
-  final String authorId;
-  final String authorName;
-  final String? authorAvatar;
-  final DateTime timestamp;
-  final MessageStatus status;
-  final bool isTyping;
-
-  ChatMessage({
-    required this.id,
-    required this.text,
-    required this.authorId,
-    required this.authorName,
-    this.authorAvatar,
-    required this.timestamp,
-    this.status = MessageStatus.sent,
-    this.isTyping = false,
-  });
-}
-
-enum MessageStatus {
-  sending,
-  sent,
-  delivered,
-  read,
-}
-
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUserName;
@@ -54,16 +30,12 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
-  final List<ChatMessage> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
   late AnimationController _typingAnimationController;
   final bool _isOtherUserTyping = false;
-
-  static const String _currentUserId = 'current_user';
-  static const String _otherUserId = 'other_user';
 
   @override
   void initState() {
@@ -72,42 +44,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
-    _loadMockMessages();
-  }
-
-  void _loadMockMessages() {
-    final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(days: 1));
-
-    _messages.addAll([
-      ChatMessage(
-        id: const Uuid().v4(),
-        text: 'Hi,can i grab? your product.i need this item to buy',
-        authorId: _otherUserId,
-        authorName: widget.otherUserName,
-        authorAvatar: widget.otherUserAvatar,
-        timestamp: yesterday.add(const Duration(hours: 12)),
-        status: MessageStatus.read,
-      ),
-      ChatMessage(
-        id: const Uuid().v4(),
-        text: 'Hi,can i grab? your product.i need this item to buy',
-        authorId: _currentUserId,
-        authorName: 'You',
-        timestamp: yesterday.add(const Duration(hours: 12, minutes: 5)),
-        status: MessageStatus.read,
-      ),
-      ChatMessage(
-        id: const Uuid().v4(),
-        text: 'Hi,can i grab?',
-        authorId: _currentUserId,
-        authorName: 'You',
-        timestamp: now.subtract(const Duration(minutes: 5)),
-        status: MessageStatus.delivered,
-      ),
-    ]);
-
-    setState(() {});
   }
 
   @override
@@ -119,49 +55,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _sendMessage() {
+  void _sendMessage(BuildContext context) {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    final message = ChatMessage(
-      id: const Uuid().v4(),
-      text: text,
-      authorId: _currentUserId,
-      authorName: 'You',
-      timestamp: DateTime.now(),
-      status: MessageStatus.sent,
-    );
-
-    setState(() {
-      _messages.add(message);
-    });
-
+    final cubit = context.read<ChatCubit>();
+    cubit.send(text);
     _textController.clear();
 
-    // Animate scroll to bottom
     Future.delayed(const Duration(milliseconds: 100), () {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
-
-    // Simulate status updates
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        final index = _messages.indexWhere((m) => m.id == message.id);
-        if (index != -1) {
-          _messages[index] = ChatMessage(
-            id: message.id,
-            text: message.text,
-            authorId: message.authorId,
-            authorName: message.authorName,
-            timestamp: message.timestamp,
-            status: MessageStatus.delivered,
-          );
-        }
-      });
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -310,8 +219,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMessage(
-      ChatMessage message, bool showAvatar, bool isLastInGroup) {
-    final isMe = message.authorId == _currentUserId;
+      ChatMessageEntity message, bool showAvatar, bool isLastInGroup) {
+    final bool isMe = message.isMine;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -377,7 +286,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          DateFormat('HH:mm').format(message.timestamp),
+                          DateFormat('HH:mm').format(message.createdAt),
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.gray8B959E.withValues(alpha: 0.7),
                             fontSize: 11.sp,
@@ -385,7 +294,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                         if (isMe) ...[
                           SizedBox(width: 1.w),
-                          _buildStatusIcon(message.status),
+                          _buildStatusIcon(message.read),
                         ],
                       ],
                     ),
@@ -422,33 +331,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildStatusIcon(MessageStatus status) {
-    switch (status) {
-      case MessageStatus.sending:
-        return Icon(
-          Icons.access_time,
-          size: 12,
-          color: AppColors.gray8B959E.withValues(alpha: 0.5),
-        );
-      case MessageStatus.sent:
-        return Icon(
-          Icons.check,
-          size: 12,
-          color: AppColors.gray8B959E.withValues(alpha: 0.7),
-        );
-      case MessageStatus.delivered:
-        return Icon(
-          Icons.done_all,
-          size: 12,
-          color: AppColors.gray8B959E.withValues(alpha: 0.7),
-        );
-      case MessageStatus.read:
-        return Icon(
-          Icons.done_all,
-          size: 12,
-          color: AppColors.blueGray374957,
-        );
-    }
+  Widget _buildStatusIcon(bool isRead) {
+    return Icon(
+      Icons.done_all,
+      size: 12,
+      color: isRead
+          ? AppColors.blueGray374957
+          : AppColors.gray8B959E.withValues(alpha: 0.7),
+    );
   }
 
   Widget _buildTypingIndicator() {
@@ -557,7 +447,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           controller: _textController,
                           focusNode: _focusNode,
                           textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _sendMessage(),
+                          onSubmitted: (_) => _sendMessage(context),
                           decoration: InputDecoration(
                             hintText: 'Type a message...',
                             hintStyle: AppTypography.body.copyWith(
@@ -580,7 +470,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       ),
                       // Send button
                       GestureDetector(
-                        onTap: _sendMessage,
+                        onTap: () => _sendMessage(context),
                         child: Container(
                           margin: EdgeInsets.only(right: 1.w),
                           width: 40,
@@ -639,78 +529,101 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Group messages by date and author for proper avatar display
-    final groupedMessages = <DateTime, List<ChatMessage>>{};
-    for (final message in _messages) {
-      final date = DateTime(
-        message.timestamp.year,
-        message.timestamp.month,
-        message.timestamp.day,
-      );
-      groupedMessages[date] ??= [];
-      groupedMessages[date]!.add(message);
-    }
-
     return Scaffold(
       backgroundColor: isDark ? AppColors.blueGray374957 : AppColors.grayF9,
-      body: Column(
-        children: [
-          _buildCustomAppBar(),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.only(top: 2.w),
-              itemCount: () {
-                int count = 0;
-                groupedMessages.forEach((date, messages) {
-                  count++; // Date separator
-                  count += messages.length; // Messages
-                });
-                if (_isOtherUserTyping) count++; // Typing indicator
-                return count;
-              }(),
-              itemBuilder: (context, index) {
-                int currentIndex = 0;
+      body: BlocProvider(
+        create: (_) => sl<ChatCubit>()
+          ..setChatRoom(widget.chatId)
+          ..loadMessages(),
+        child: BlocBuilder<ChatCubit, ChatState>(
+          builder: (context, state) {
+            final List<ChatMessageEntity> messages = state.messages;
 
-                for (final entry in groupedMessages.entries) {
-                  if (currentIndex == index) {
-                    return _buildDateSeparator(entry.key);
-                  }
-                  currentIndex++;
+            // Group messages by date for separators
+            final groupedMessages = <DateTime, List<ChatMessageEntity>>{};
+            for (final message in messages) {
+              final date = DateTime(
+                message.createdAt.year,
+                message.createdAt.month,
+                message.createdAt.day,
+              );
+              groupedMessages[date] ??= <ChatMessageEntity>[];
+              groupedMessages[date]!.add(message);
+            }
 
-                  for (int i = 0; i < entry.value.length; i++) {
-                    if (currentIndex == index) {
-                      final message = entry.value[i];
-                      final nextMessage = i < entry.value.length - 1
-                          ? entry.value[i + 1]
-                          : null;
+            return Column(
+              children: [
+                _buildCustomAppBar(),
+                Expanded(
+                  child: state.status == ChatStatus.loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: EdgeInsets.only(top: 2.w),
+                          itemCount: () {
+                            int count = 0;
+                            groupedMessages.forEach((DateTime _, List<ChatMessageEntity> msgs) {
+                              count++; // Date separator
+                              count += msgs.length;
+                            });
+                            if (_isOtherUserTyping) count++;
+                            return count;
+                          }(),
+                          itemBuilder: (context, index) {
+                            int currentIndex = 0;
 
-                      final showAvatar = nextMessage == null ||
-                          nextMessage.authorId != message.authorId ||
-                          nextMessage.timestamp
-                                  .difference(message.timestamp)
-                                  .inMinutes >
-                              5;
+                            for (final entry in groupedMessages.entries) {
+                              if (currentIndex == index) {
+                                return _buildDateSeparator(entry.key);
+                              }
+                              currentIndex++;
 
-                      final isLastInGroup = nextMessage == null ||
-                          nextMessage.authorId != message.authorId;
+                              for (int i = 0; i < entry.value.length; i++) {
+                                if (currentIndex == index) {
+                                  final ChatMessageEntity message =
+                                      entry.value[i];
+                                  final ChatMessageEntity? nextMessage =
+                                      i < entry.value.length - 1
+                                          ? entry.value[i + 1]
+                                          : null;
 
-                      return _buildMessage(message, showAvatar, isLastInGroup);
-                    }
-                    currentIndex++;
-                  }
-                }
+                                  final bool showAvatar = !message.isMine &&
+                                      (nextMessage == null ||
+                                          nextMessage.authorId !=
+                                              message.authorId ||
+                                          nextMessage.createdAt
+                                                  .difference(
+                                                      message.createdAt)
+                                                  .inMinutes >
+                                              5);
 
-                if (_isOtherUserTyping && currentIndex == index) {
-                  return _buildTypingIndicator();
-                }
+                                  final bool isLastInGroup = nextMessage ==
+                                          null ||
+                                      nextMessage.authorId != message.authorId;
 
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-          _buildInputBar(),
-        ],
+                                  return _buildMessage(
+                                    message,
+                                    showAvatar,
+                                    isLastInGroup,
+                                  );
+                                }
+                                currentIndex++;
+                              }
+                            }
+
+                            if (_isOtherUserTyping && currentIndex == index) {
+                              return _buildTypingIndicator();
+                            }
+
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                ),
+                _buildInputBar(),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
