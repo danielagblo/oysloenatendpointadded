@@ -516,7 +516,9 @@ class _MenuTile extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: SvgPicture.asset(iconPath, width: 18, height: 18),
+        child: iconPath.toLowerCase().endsWith('.svg')
+            ? SvgPicture.asset(iconPath, width: 18, height: 18)
+            : Image.asset(iconPath, width: 18, height: 18),
       ),
       title: Text(title, style: AppTypography.body),
       onTap: onTap,
@@ -603,7 +605,7 @@ class _AccountDeleteRequestSheetState
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: state.isSubmitting
+                    onPressed: state.isSubmitting || state.hasPendingRequest
                         ? null
                         : () async {
                             await cubit.submitDeleteRequest(
@@ -625,7 +627,11 @@ class _AccountDeleteRequestSheetState
                                   AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text('Submit delete request'),
+                        : Text(
+                            state.hasPendingRequest
+                                ? 'You already have a pending request'
+                                : 'Submit delete request',
+                          ),
                   ),
                 ),
                 if (state.requests.isNotEmpty) ...[
@@ -644,12 +650,63 @@ class _AccountDeleteRequestSheetState
                       separatorBuilder: (_, __) => const SizedBox(height: 4),
                       itemBuilder: (context, index) {
                         final req = state.requests[index];
+                        final String status =
+                            (req.status.isEmpty ? 'unknown' : req.status)
+                                .toLowerCase();
+                        Color chipColor = AppColors.grayD9;
+                        Color textColor = AppColors.blueGray374957;
+                        String label;
+                        if (status.contains('pending')) {
+                          chipColor = Colors.amber.shade100;
+                          textColor = Colors.amber.shade800;
+                          label = 'Pending';
+                        } else if (status.contains('approved') ||
+                            status.contains('completed')) {
+                          chipColor = Colors.green.shade100;
+                          textColor = Colors.green.shade800;
+                          label = 'Approved';
+                        } else if (status.contains('rejected') ||
+                            status.contains('denied')) {
+                          chipColor = Colors.red.shade100;
+                          textColor = Colors.red.shade800;
+                          label = 'Rejected';
+                        } else {
+                          label = req.status;
+                        }
+
                         return ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            req.status,
-                            style: AppTypography.bodySmall,
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  req.reason?.trim().isNotEmpty == true
+                                      ? req.reason!.trim()
+                                      : 'Account delete request',
+                                  style: AppTypography.bodySmall,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: chipColor,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  label,
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           subtitle: req.reason != null &&
                                   req.reason!.trim().isNotEmpty

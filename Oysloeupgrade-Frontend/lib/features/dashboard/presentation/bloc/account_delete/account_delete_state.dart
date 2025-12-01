@@ -22,6 +22,13 @@ class AccountDeleteState {
 
   bool get hasData => requests.isNotEmpty;
 
+  bool get hasPendingRequest {
+    return requests.any(
+      (AccountDeleteRequestEntity r) =>
+          r.status.toLowerCase().contains('pending'),
+    );
+  }
+
   AccountDeleteState copyWith({
     AccountDeleteStatus? status,
     List<AccountDeleteRequestEntity>? requests,
