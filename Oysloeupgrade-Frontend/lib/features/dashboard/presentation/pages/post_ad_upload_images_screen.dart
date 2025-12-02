@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
 import 'package:oysloe_mobile/core/common/widgets/buttons.dart';
 import 'package:oysloe_mobile/core/routes/routes.dart';
@@ -94,22 +99,26 @@ class _PostAdUploadImagesScreenState extends State<PostAdUploadImagesScreen> {
   final List<String> _selectedImages = [];
   static const int maxImages = 6;
 
-  final List<String> _sampleImages = [
-    'assets/images/ad1.jpg',
-    'assets/images/ad2.jpg',
-    'assets/images/ad3.jpg',
-    'assets/images/ad4.jpg',
-    'assets/images/ad5.jpg',
-    'assets/images/ad6.jpg',
-  ];
+  final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImages() async {
-    setState(() {
-      if (_selectedImages.length < maxImages) {
-        _selectedImages
-            .add(_sampleImages[_selectedImages.length % _sampleImages.length]);
-      }
-    });
+    try {
+      final int remaining = maxImages - _selectedImages.length;
+      if (remaining <= 0) return;
+
+      final List<XFile> files = await _picker.pickMultiImage(
+        imageQuality: 80,
+      );
+      if (files.isEmpty) return;
+
+      setState(() {
+        for (final XFile file in files.take(remaining)) {
+          _selectedImages.add(file.path);
+        }
+      });
+    } on PlatformException catch (e) {
+      debugPrint('Image picker error: $e');
+    }
   }
 
   void _removeImage(int index) {
@@ -317,10 +326,7 @@ class _PostAdUploadImagesScreenState extends State<PostAdUploadImagesScreen> {
               ],
             ),
             clipBehavior: Clip.antiAlias,
-            child: Image.asset(
-              _selectedImages[index],
-              fit: BoxFit.cover,
-            ),
+            child: _buildImageFromPath(_selectedImages[index]),
           ),
         ),
       ),
@@ -375,12 +381,7 @@ class _PostAdUploadImagesScreenState extends State<PostAdUploadImagesScreen> {
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            Image.asset(
-              _selectedImages[index],
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            _buildImageFromPath(_selectedImages[index]),
             Positioned(
               top: 4,
               right: 4,
@@ -404,6 +405,25 @@ class _PostAdUploadImagesScreenState extends State<PostAdUploadImagesScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImageFromPath(String path) {
+    if (kIsWeb) {
+      // On web, image_picker returns a network-accessible blob URL.
+      return Image.network(
+        path,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+      );
+    }
+
+    return Image.file(
+      File(path),
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.cover,
     );
   }
 

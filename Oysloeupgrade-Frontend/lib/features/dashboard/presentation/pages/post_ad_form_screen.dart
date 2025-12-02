@@ -6,7 +6,10 @@ import 'package:oysloe_mobile/core/common/widgets/buttons.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/create_product_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/category_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_state.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/ad_input.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_state.dart';
@@ -38,7 +41,7 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
   final _weeklyDurationController = TextEditingController();
   final _monthlyDurationController = TextEditingController();
 
-  String? _selectedCategory;
+  int? _selectedCategoryId;
   String _selectedPurpose = 'Sale';
   String? _selectedAreaLocation;
   String? _selectedMapLocation;
@@ -231,13 +234,58 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AdCategoryDropdown(
-                  labelText: 'Product Category',
-                  value: _selectedCategory,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
+                BlocBuilder<CategoriesCubit, CategoriesState>(
+                  builder: (context, state) {
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
+
+                    if (state.isLoading && !state.hasData) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Product Category',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: isDark
+                                  ? AppColors.white
+                                  : AppColors.blueGray374957,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.blueGray374957
+                                  : AppColors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.blueGray374957
+                                    : AppColors.grayD9,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return _CategoryBottomSheetField(
+                      categoriesState: state,
+                      selectedId: _selectedCategoryId,
+                      onSelected: (id) {
+                        setState(() {
+                          _selectedCategoryId = id;
+                        });
+                      },
+                    );
                   },
                 ),
                 SizedBox(height: 3.h),
@@ -334,48 +382,136 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   ),
                 ),
                 SizedBox(height: 2.w),
-                AdEditableDropdown(
-                  controller: _brandController,
-                  hintText: 'Brand',
-                  items: [
-                    'Apple',
-                    'Samsung',
-                    'Nike',
-                    'Sony',
-                    'LG',
-                    'HP',
-                    'Dell',
-                    'Other'
+                AdDropdown<String>(
+                  value: _brandController.text.isEmpty
+                      ? null
+                      : _brandController.text,
+                  labelText: 'Brand',
+                  hintText: 'Select brand',
+                  items: const [
+                    DropdownMenuItem<String>(
+                      value: 'Apple',
+                      child: Text('Apple'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Samsung',
+                      child: Text('Samsung'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Nike',
+                      child: Text('Nike'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Sony',
+                      child: Text('Sony'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'LG',
+                      child: Text('LG'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'HP',
+                      child: Text('HP'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Dell',
+                      child: Text('Dell'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Other',
+                      child: Text('Other'),
+                    ),
                   ],
                   onChanged: (value) {
-                    // Value is already set in the controller
+                    setState(() {
+                      _brandController.text = value ?? '';
+                    });
                   },
                 ),
                 SizedBox(height: 3.w),
-                AdEditableDropdown(
-                  controller: _key1Controller,
-                  hintText: 'Key 1',
-                  items: ['New', 'Used', 'Refurbished', 'Like New'],
+                AdDropdown<String>(
+                  value:
+                      _key1Controller.text.isEmpty ? null : _key1Controller.text,
+                  labelText: 'Key 1',
+                  hintText: 'Select key 1',
+                  items: const [
+                    DropdownMenuItem<String>(
+                      value: 'New',
+                      child: Text('New'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Used',
+                      child: Text('Used'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Refurbished',
+                      child: Text('Refurbished'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Like New',
+                      child: Text('Like New'),
+                    ),
+                  ],
                   onChanged: (value) {
-                    // Value is already set in the controller
+                    setState(() {
+                      _key1Controller.text = value ?? '';
+                    });
                   },
                 ),
                 SizedBox(height: 3.w),
-                AdEditableDropdown(
-                  controller: _key2Controller,
-                  hintText: 'Key 2',
-                  items: ['Original', 'Copy', 'Generic'],
+                AdDropdown<String>(
+                  value:
+                      _key2Controller.text.isEmpty ? null : _key2Controller.text,
+                  labelText: 'Key 2',
+                  hintText: 'Select key 2',
+                  items: const [
+                    DropdownMenuItem<String>(
+                      value: 'Original',
+                      child: Text('Original'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Copy',
+                      child: Text('Copy'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'Generic',
+                      child: Text('Generic'),
+                    ),
+                  ],
                   onChanged: (value) {
-                    // Value is already set in the controller
+                    setState(() {
+                      _key2Controller.text = value ?? '';
+                    });
                   },
                 ),
                 SizedBox(height: 3.w),
-                AdEditableDropdown(
-                  controller: _key3Controller,
-                  hintText: 'Key 3',
-                  items: ['Warranty', 'No Warranty', '1 Year', '2 Years'],
+                AdDropdown<String>(
+                  value:
+                      _key3Controller.text.isEmpty ? null : _key3Controller.text,
+                  labelText: 'Key 3',
+                  hintText: 'Select key 3',
+                  items: const [
+                    DropdownMenuItem<String>(
+                      value: 'Warranty',
+                      child: Text('Warranty'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'No Warranty',
+                      child: Text('No Warranty'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: '1 Year',
+                      child: Text('1 Year'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: '2 Years',
+                      child: Text('2 Years'),
+                    ),
+                  ],
                   onChanged: (value) {
-                    // Value is already set in the controller
+                    setState(() {
+                      _key3Controller.text = value ?? '';
+                    });
                   },
                 ),
                 SizedBox(height: 3.h),
@@ -501,12 +637,19 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
   void _handleFinish() {
     // Validate the form first
     if (_formKey.currentState?.validate() ?? false) {
+      if (_selectedCategoryId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a product category')),
+        );
+        return;
+      }
+
       final params = CreateProductParams(
         name: _titleController.text,
         description: _descriptionController.text,
         price: _priceController.text,
-        type: _selectedPurpose,
-        category: int.tryParse(_selectedCategory ?? '') ?? 0,
+        type: _mapPurposeToBackendType(_selectedPurpose),
+        category: _selectedCategoryId!,
         duration: _durationController.text,
         images: widget.selectedImages ?? [],
       );
@@ -518,5 +661,185 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
         const SnackBar(content: Text('Please fix the errors in the form')),
       );
     }
+  }
+
+  String _mapPurposeToBackendType(String purpose) {
+    switch (purpose) {
+      case 'Rent':
+        return 'RENT';
+      case 'PayLater':
+        return 'HIGH_PURCHASE';
+      case 'Sale':
+      default:
+        return 'SALE';
+    }
+  }
+}
+
+class _CategoryBottomSheetField extends StatelessWidget {
+  const _CategoryBottomSheetField({
+    required this.categoriesState,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final CategoriesState categoriesState;
+  final int? selectedId;
+  final ValueChanged<int?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    String? selectedLabel;
+    if (selectedId != null) {
+      final match = categoriesState.categories.firstWhere(
+        (c) => c.id == selectedId,
+        orElse: () => const CategoryEntity(id: -1, name: ''),
+      );
+      if (match.id != -1) {
+        selectedLabel = match.name;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Product Category',
+          style: AppTypography.bodySmall.copyWith(
+            color: isDark ? AppColors.white : AppColors.blueGray374957,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () async {
+            final int? picked = await showModalBottomSheet<int>(
+              context: context,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              builder: (sheetContext) {
+                return SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Select category',
+                              style: AppTypography.bodyLarge,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () =>
+                                  Navigator.of(sheetContext).pop(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Choose the most relevant category for your ad. '
+                          'These options are loaded from the live admin categories.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.blueGray263238
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 400),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: categoriesState.categories.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 4),
+                            itemBuilder: (context, index) {
+                              final category = categoriesState.categories[index];
+                              return ListTile(
+                                title: Text(category.name),
+                                subtitle: category.description != null &&
+                                        category.description!.trim().isNotEmpty
+                                    ? Text(
+                                        category.description!,
+                                        style:
+                                            AppTypography.bodySmall.copyWith(
+                                          color: AppColors.blueGray263238
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      )
+                                    : null,
+                                onTap: () => Navigator.of(sheetContext)
+                                    .pop<int>(category.id),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+
+            if (picked != null) {
+              onSelected(picked);
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.blueGray374957 : AppColors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.blueGray374957 : AppColors.grayD9,
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selectedLabel ?? 'Select product category',
+                    style: AppTypography.body.copyWith(
+                      color: selectedLabel == null
+                          ? AppColors.gray8B959E
+                          : (isDark
+                              ? AppColors.white
+                              : AppColors.blueGray374957),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppColors.grayD9.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: AppColors.blueGray374957,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

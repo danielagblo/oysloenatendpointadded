@@ -229,8 +229,15 @@ final List<RouteBase> routes = <RouteBase>[
               return buildPageWithDefaultTransition(
                 context: context,
                 state: state,
-                child: BlocProvider<ProductsCubit>(
-                  create: (_) => sl<ProductsCubit>(),
+                child: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<ProductsCubit>(
+                      create: (_) => sl<ProductsCubit>(),
+                    ),
+                    BlocProvider<CategoriesCubit>(
+                      create: (_) => sl<CategoriesCubit>()..fetch(),
+                    ),
+                  ],
                   child: PostAdFormScreen(selectedImages: selectedImages),
                 ),
               );
