@@ -29,6 +29,15 @@ class AccountDeleteState {
     );
   }
 
+  bool get hasApprovedRequest {
+    return requests.any(
+      (AccountDeleteRequestEntity r) {
+        final status = r.status.toLowerCase();
+        return status.contains('approved') || status.contains('completed');
+      },
+    );
+  }
+
   AccountDeleteState copyWith({
     AccountDeleteStatus? status,
     List<AccountDeleteRequestEntity>? requests,

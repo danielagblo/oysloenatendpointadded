@@ -537,6 +537,7 @@ class _AccountDeleteRequestSheet extends StatefulWidget {
 class _AccountDeleteRequestSheetState
     extends State<_AccountDeleteRequestSheet> {
   final TextEditingController _reasonController = TextEditingController();
+  bool _handledLogout = false;
 
   @override
   void dispose() {
@@ -554,6 +555,30 @@ class _AccountDeleteRequestSheetState
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message!)),
             );
+          }
+
+          // If any delete request has been approved, automatically log the user out.
+          if (!_handledLogout && state.hasApprovedRequest) {
+            _handledLogout = true;
+            final logoutUseCase = sl<LogoutUseCase>();
+            final router = GoRouter.of(context);
+            final navigator = Navigator.of(context);
+
+            logoutUseCase(const NoParams()).then((result) {
+              if (!context.mounted) return;
+              result.fold(
+                (failure) {
+                  // Show failure but do not attempt infinite retries.
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(failure.message)),
+                  );
+                },
+                (_) {
+                  navigator.pop(); // Close the bottom sheet
+                  router.go(AppRoutePaths.login);
+                },
+              );
+            });
           }
         },
         builder: (context, state) {
@@ -616,6 +641,7 @@ class _AccountDeleteRequestSheetState
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
                     ),
                     child: state.isSubmitting
                         ? const SizedBox(
@@ -629,11 +655,21 @@ class _AccountDeleteRequestSheetState
                           )
                         : Text(
                             state.hasPendingRequest
-                                ? 'You already have a pending request'
-                                : 'Submit delete request',
+                                ? 'Account deletion pending'
+                                : 'Delete account',
                           ),
                   ),
                 ),
+              if (state.hasPendingRequest) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Your account deletion request is currently pending review. '
+                  'You cannot submit another request until this one is processed.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.blueGray263238.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
                 if (state.requests.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(
@@ -731,3 +767,4 @@ class _AccountDeleteRequestSheetState
     );
   }
 }
+
