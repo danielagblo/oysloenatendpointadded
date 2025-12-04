@@ -16,6 +16,8 @@ class ProductModel extends ProductEntity {
     required super.category,
     required super.createdAt,
     required super.updatedAt,
+    super.totalReports = 0,
+    super.totalFavourites = 0,
     super.location,
     super.isTaken = false,
   });
@@ -35,6 +37,8 @@ class ProductModel extends ProductEntity {
       category: _parseCategory(json['category']),
       createdAt: DateUtilsExt.parseOrEpoch(json['created_at'] as String?),
       updatedAt: DateUtilsExt.parseOrEpoch(json['updated_at'] as String?),
+      totalReports: _parseInt(json['total_reports']),
+      totalFavourites: _parseInt(json['total_favourites']),
       location: _parseLocation(json['location']),
       isTaken: json['is_taken'] as bool? ?? false,
     );
@@ -137,5 +141,13 @@ class ProductModel extends ProductEntity {
       return int.tryParse(value);
     }
     return null;
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
   }
 }

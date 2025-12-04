@@ -838,13 +838,13 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
             : const SizedBox.shrink(),
         actions: [
           AppBarAction.svg(
-            label: '24',
+            label: '${_product?.totalReports ?? 0}',
             iconSize: 18,
             onTap: () => context.pushNamed(AppRouteNames.dashboardReport),
             svgAsset: 'assets/icons/flag.svg',
           ),
           AppBarAction.svg(
-            label: '10',
+            label: '${_product?.totalFavourites ?? 0}',
             iconSize: 18,
             onTap: () {},
             svgAsset: 'assets/icons/favorite.svg',
