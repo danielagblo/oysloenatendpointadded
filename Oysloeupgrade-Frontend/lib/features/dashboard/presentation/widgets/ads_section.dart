@@ -254,7 +254,8 @@ class _ProductsShimmer extends StatelessWidget {
           crossAxisCount: 2,
           mainAxisSpacing: 0.9.h,
           crossAxisSpacing: 1.5.w,
-          childAspectRatio: 0.97,
+          // Slightly taller skeleton cards to avoid bottom overflow.
+          childAspectRatio: 0.9,
         ),
         itemCount: 6,
         itemBuilder: (BuildContext context, int index) {
@@ -342,7 +343,8 @@ class _ProductsGrid extends StatelessWidget {
             crossAxisCount: 2,
             mainAxisSpacing: 0.9.h,
             crossAxisSpacing: 1.5.w,
-            childAspectRatio: 0.97,
+            // Give ad cards more vertical room so text and prices don't clip.
+            childAspectRatio: 0.9,
           ),
           itemCount: products.length,
           itemBuilder: (BuildContext context, int index) {

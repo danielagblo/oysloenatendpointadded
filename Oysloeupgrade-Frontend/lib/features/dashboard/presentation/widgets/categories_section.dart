@@ -186,7 +186,8 @@ class _CategoriesGrid extends StatelessWidget {
         crossAxisCount: crossAxisCount,
         mainAxisSpacing: 1.2.h,
         crossAxisSpacing: 2.4.w,
-        childAspectRatio: 0.9,
+        // Slightly taller tiles to reduce overflow on smaller screens.
+        childAspectRatio: 0.8,
       ),
       itemBuilder: (context, index) {
         final int? mappedIndex = _resolveCategoryIndex(
@@ -247,7 +248,7 @@ class _CategoriesSkeleton extends StatelessWidget {
           crossAxisCount: 4,
           mainAxisSpacing: 1.2.h,
           crossAxisSpacing: 2.4.w,
-          childAspectRatio: 0.9,
+          childAspectRatio: 0.8,
         ),
         itemBuilder: (_, __) => Container(
           decoration: BoxDecoration(
@@ -333,7 +334,8 @@ class _CategoryCard extends StatelessWidget {
           color: AppColors.grayF9,
           borderRadius: BorderRadius.circular(9),
         ),
-        padding: EdgeInsets.symmetric(vertical: 1.2.h, horizontal: 2.w),
+        // Slightly tighter vertical padding to avoid text clipping.
+        padding: EdgeInsets.symmetric(vertical: 1.h, horizontal: 2.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -350,7 +352,8 @@ class _CategoryCard extends StatelessWidget {
                 child: Image.asset(asset, fit: BoxFit.contain),
               ),
             ),
-            SizedBox(height: 0.8.h),
+            // Slightly reduced spacing between icon and label.
+            SizedBox(height: 0.6.h),
             Text(
               label,
               textAlign: TextAlign.center,
@@ -358,7 +361,8 @@ class _CategoryCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppColors.blueGray374957,
-                fontSize: 13.sp,
+                // Slightly smaller label to fit better on small screens.
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
