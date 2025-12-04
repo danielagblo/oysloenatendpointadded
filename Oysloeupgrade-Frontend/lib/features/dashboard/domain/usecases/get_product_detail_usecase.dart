@@ -20,6 +20,34 @@ class GetProductDetailUseCase
   }
 }
 
+class ReportProductParams extends Equatable {
+  const ReportProductParams({
+    required this.productId,
+    required this.reason,
+  });
+
+  final int productId;
+  final String reason;
+
+  @override
+  List<Object> get props => <Object>[productId, reason];
+}
+
+class ReportProductUseCase
+    extends UseCase<void, ReportProductParams> {
+  ReportProductUseCase(this._repository);
+
+  final DashboardRepository _repository;
+
+  @override
+  Future<Either<Failure, void>> call(ReportProductParams params) {
+    return _repository.reportProduct(
+      productId: params.productId,
+      reason: params.reason,
+    );
+  }
+}
+
 class GetProductDetailParams extends Equatable {
   const GetProductDetailParams({required this.id});
 

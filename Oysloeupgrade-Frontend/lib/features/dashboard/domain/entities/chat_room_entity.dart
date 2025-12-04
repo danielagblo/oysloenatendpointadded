@@ -8,6 +8,7 @@ class ChatRoomEntity {
     this.lastMessageAt,
     this.unreadCount = 0,
     this.isSupport = false,
+    this.isClosed = false,
   });
 
   final String id;
@@ -18,6 +19,9 @@ class ChatRoomEntity {
   final DateTime? lastMessageAt;
   final int unreadCount;
   final bool isSupport;
+  /// When true, the support case is closed and users should not be able
+  /// to send new messages (read-only room).
+  final bool isClosed;
 }
 
 

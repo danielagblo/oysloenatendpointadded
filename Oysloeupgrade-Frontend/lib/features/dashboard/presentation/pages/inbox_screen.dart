@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:oysloe_mobile/core/usecase/usecase.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
 import 'package:oysloe_mobile/core/routes/routes.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
@@ -35,10 +36,16 @@ class _InboxScreenState extends State<InboxScreen> {
         create: (_) => ChatListCubit(sl<GetChatRoomsUseCase>())..load(),
         child: BlocBuilder<ChatListCubit, ChatListState>(
           builder: (context, chatState) {
+            final int activeSupportCount = chatState.rooms
+                .where((ChatRoomEntity r) => r.isSupport && !r.isClosed)
+                .length;
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildTabBar(unreadCount: chatState.totalUnread),
+                  _buildTabBar(
+                    unreadCount: chatState.totalUnread,
+                    activeSupportCount: activeSupportCount,
+                  ),
                   selectedTab == 0
                       ? _buildChatTab(context, chatState)
                       : _buildSupportTab(),
@@ -51,7 +58,10 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
-  Widget _buildTabBar({int unreadCount = 0}) {
+  Widget _buildTabBar({
+    int unreadCount = 0,
+    int activeSupportCount = 0,
+  }) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 3.h, horizontal: 6.w),
       decoration: BoxDecoration(
@@ -73,7 +83,8 @@ class _InboxScreenState extends State<InboxScreen> {
             child: _buildTabButton(
               title: 'Support',
               isSelected: selectedTab == 1,
-              unreadCount: 0,
+              // Here `unreadCount` represents number of active cases.
+              unreadCount: activeSupportCount,
               isActive: true,
               onTap: () => setState(() => selectedTab = 1),
             ),
@@ -124,7 +135,7 @@ class _InboxScreenState extends State<InboxScreen> {
                     fontSize: 14.sp,
                   ),
                 ),
-                if (unreadCount > 0) ...[
+                if (!isActive && unreadCount > 0) ...[
                   SizedBox(height: 2),
                   Text(
                     '$unreadCount unread',
@@ -133,14 +144,15 @@ class _InboxScreenState extends State<InboxScreen> {
                         color: AppColors.blueGray374957.withValues(alpha: 0.7)),
                   ),
                 ],
-                if (isActive && unreadCount == 0) ...[
+                if (isActive) ...[
                   SizedBox(height: 2),
                   Text(
-                    '14 active',
+                    '$unreadCount active',
                     style: AppTypography.bodySmall.copyWith(
-                        fontSize: 13.sp,
-                        color: AppColors.blueGray374957.withValues(alpha: 0.7)),
-                  ),
+                      fontSize: 13.sp,
+                      color: AppColors.blueGray374957.withValues(alpha: 0.7),
+                    ),
+                  )
                 ],
               ],
             ),
@@ -158,11 +170,20 @@ class _InboxScreenState extends State<InboxScreen> {
       );
     }
 
-    final List<ChatRoomEntity> userRooms =
-        state.rooms.where((ChatRoomEntity r) => !r.isSupport).toList();
+    // Treat only meaningful user-to-user rooms as chats. Rooms with no name,
+    // no last message, and no unread count are effectively "empty" and should
+    // not render as a row; instead we show the global empty state.
+    final List<ChatRoomEntity> userRooms = state.rooms
+        .where((ChatRoomEntity r) => !r.isSupport)
+        .where((ChatRoomEntity r) {
+          final String name = r.otherUserName.trim();
+          final String last = (r.lastMessage ?? '').trim();
+          return name.isNotEmpty || last.isNotEmpty || r.unreadCount > 0;
+        })
+        .toList();
 
     if (userRooms.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(message: 'No chats yet');
     }
 
     return Column(
@@ -175,7 +196,7 @@ class _InboxScreenState extends State<InboxScreen> {
               time: _formatChatTime(room.lastMessageAt),
               avatar: room.otherUserAvatar ?? '',
               isUnread: room.unreadCount > 0,
-              isClosed: false,
+              isClosed: room.isClosed,
             ),
           )
           .toList(),
@@ -219,44 +240,78 @@ class _InboxScreenState extends State<InboxScreen> {
         ),
         SizedBox(height: 16),
         Center(
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.2.h),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Add case',
-                  style: AppTypography.body.copyWith(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blueGray374957,
+          child: GestureDetector(
+            onTap: () {
+              // When adding a case:
+              // - If there are already open support rooms, jump into the most
+              //   recent one so the user can continue that conversation.
+              // - If none exist yet, navigate to the report screen where a
+              //   case can be created; backend can then create a support room.
+              final List<ChatRoomEntity> openSupportRooms = supportRooms
+                  .where((ChatRoomEntity r) => !r.isClosed)
+                  .toList();
+              if (openSupportRooms.isNotEmpty) {
+                openSupportRooms.sort(
+                  (a, b) =>
+                      (b.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+                          .compareTo(
+                    a.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0),
                   ),
-                ),
-                SizedBox(width: 8),
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
+                );
+                final ChatRoomEntity room = openSupportRooms.first;
+                context.pushNamed(
+                  AppRouteNames.dashboardChat,
+                  pathParameters: <String, String>{'chatId': room.id},
+                  extra: <String, dynamic>{
+                    'otherUserName':
+                        room.otherUserName.isNotEmpty ? room.otherUserName : 'Support',
+                    'otherUserAvatar': room.otherUserAvatar ?? '',
+                    'isClosed': room.isClosed,
+                  },
+                );
+              } else {
+                context.pushNamed(AppRouteNames.dashboardReport);
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.2.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Add case',
+                    style: AppTypography.body.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blueGray374957,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.add,
-                    size: 16,
-                    color: AppColors.blueGray374957,
+                  SizedBox(width: 8),
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add,
+                      size: 16,
+                      color: AppColors.blueGray374957,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
         if (supportRooms.isEmpty) ...[
           SizedBox(height: 4.h),
-          _buildEmptyState(),
+          _buildEmptyState(message: 'No support conversations yet'),
         ] else ...[
           Padding(
             padding: EdgeInsets.only(left: 16, right: 16, top: 3.h),
@@ -280,7 +335,7 @@ class _InboxScreenState extends State<InboxScreen> {
                     time: _formatChatTime(room.lastMessageAt),
                     avatar: room.otherUserAvatar ?? '',
                     isUnread: room.unreadCount > 0,
-                    isClosed: false,
+                    isClosed: room.isClosed,
                   ),
                 )
                 .toList(),
@@ -303,17 +358,15 @@ class _InboxScreenState extends State<InboxScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        // Only navigate if the chat is not closed
-        if (!isClosed) {
-          context.pushNamed(
-            AppRouteNames.dashboardChat,
-            pathParameters: {'chatId': chatId},
-            extra: {
-              'otherUserName': name,
-              'otherUserAvatar': avatar,
-            },
-          );
-        }
+        context.pushNamed(
+          AppRouteNames.dashboardChat,
+          pathParameters: {'chatId': chatId},
+          extra: <String, dynamic>{
+            'otherUserName': name,
+            'otherUserAvatar': avatar,
+            'isClosed': isClosed,
+          },
+        );
       },
       child: Container(
         width: double.infinity,
@@ -327,18 +380,33 @@ class _InboxScreenState extends State<InboxScreen> {
               width: 6.8.h,
               height: 6.h,
               decoration: BoxDecoration(
-                shape: BoxShape.rectangle,
-                image: avatar.isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(avatar),
-                        fit: BoxFit.cover,
-                      )
-                    : const DecorationImage(
-                        image: AssetImage('assets/images/default_user.svg'),
-                        fit: BoxFit.cover,
-                      ),
+                color: AppColors.grayF9,
                 borderRadius: BorderRadius.circular(10),
               ),
+              child: avatar.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        avatar,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: SvgPicture.asset(
+                              'assets/images/default_user.svg',
+                              width: 40,
+                              height: 40,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Center(
+                      child: SvgPicture.asset(
+                        'assets/images/default_user.svg',
+                        width: 40,
+                        height: 40,
+                      ),
+                    ),
             ),
             SizedBox(width: 2.w),
             Expanded(
@@ -456,7 +524,7 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({String message = 'No chats yet'}) {
     return Padding(
       padding: EdgeInsets.only(top: 10.h),
       child: Center(
@@ -470,7 +538,7 @@ class _InboxScreenState extends State<InboxScreen> {
             ),
             SizedBox(height: 16),
             Text(
-              'No chats yet',
+              message,
               style: AppTypography.body.copyWith(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w600,

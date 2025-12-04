@@ -37,6 +37,11 @@ abstract class DashboardRepository {
     required int productId,
   });
 
+  Future<Either<Failure, void>> reportProduct({
+    required int productId,
+    required String reason,
+  });
+
   Future<Either<Failure, List<ReviewEntity>>> getProductReviews({
     required int productId,
   });

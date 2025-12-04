@@ -26,6 +26,8 @@ class AppStrings {
       '$apiBasePath/products/$id/mark-as-taken/';
   static String setProductStatusURL(String id) =>
       '$apiBasePath/products/$id/set-status/';
+  static String productReportURL(String id) =>
+      '$apiBasePath/products/$id/report/';
 
   // Reviews
   static const String reviewsURL = '$apiBasePath/reviews/';

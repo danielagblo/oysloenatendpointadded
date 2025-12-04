@@ -265,6 +265,7 @@ final List<RouteBase> routes = <RouteBase>[
                       extra?['otherUserName'] as String? ?? 'Unknown',
                   otherUserAvatar: extra?['otherUserAvatar'] as String? ??
                       'assets/images/man.jpg',
+                  isReadOnly: extra?['isClosed'] as bool? ?? false,
                 ),
               );
             },
@@ -427,7 +428,23 @@ final List<RouteBase> routes = <RouteBase>[
       GoRoute(
         name: AppRouteNames.dashboardReport,
         path: AppRoutePaths.dashboardReport,
-        pageBuilder: defaultPageBuilder(const ReportScreen()),
+        pageBuilder: (context, state) {
+          final Object? extra = state.extra;
+          int? productId;
+          if (extra is Map<String, dynamic>) {
+            final Object? rawId = extra['productId'];
+            if (rawId is int) {
+              productId = rawId;
+            } else if (rawId is String) {
+              productId = int.tryParse(rawId);
+            }
+          }
+          return buildPageWithDefaultTransition(
+            context: context,
+            state: state,
+            child: ReportScreen(productId: productId),
+          );
+        },
       ),
       GoRoute(
         name: AppRouteNames.dashboardPrivacyPolicy,

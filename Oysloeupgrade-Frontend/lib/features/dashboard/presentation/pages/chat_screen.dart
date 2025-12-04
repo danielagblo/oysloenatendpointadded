@@ -17,12 +17,15 @@ class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUserName;
   final String otherUserAvatar;
+  /// When true, this chat is read-only (e.g. closed support case).
+  final bool isReadOnly;
 
   const ChatScreen({
     super.key,
     required this.chatId,
     required this.otherUserName,
     required this.otherUserAvatar,
+    this.isReadOnly = false,
   });
 
   @override
@@ -56,6 +59,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _sendMessage(BuildContext context) {
+    if (widget.isReadOnly) return;
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
@@ -401,6 +405,33 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildInputBar() {
+    if (widget.isReadOnly) {
+      return Container(
+        padding: EdgeInsets.only(
+          left: 4.w,
+          right: 4.w,
+          top: 3.w,
+          bottom: MediaQuery.of(context).padding.bottom + 3.w,
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: 1.6.h, horizontal: 3.w),
+          decoration: BoxDecoration(
+            color: AppColors.grayF9,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.blueGray374957.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Text(
+            'This case has been closed. You can no longer send messages.',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.gray8B959E,
+            ),
+          ),
+        ),
+      );
+    }
     return Container(
       padding: EdgeInsets.only(
         left: 4.w,

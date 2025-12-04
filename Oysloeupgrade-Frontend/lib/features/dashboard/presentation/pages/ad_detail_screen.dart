@@ -840,7 +840,15 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
           AppBarAction.svg(
             label: '${_product?.totalReports ?? 0}',
             iconSize: 18,
-            onTap: () => context.pushNamed(AppRouteNames.dashboardReport),
+            onTap: () {
+              final int? productId = _product?.id ?? int.tryParse(widget.adId ?? '');
+              context.pushNamed(
+                AppRouteNames.dashboardReport,
+                extra: <String, dynamic>{
+                  if (productId != null) 'productId': productId,
+                },
+              );
+            },
             svgAsset: 'assets/icons/flag.svg',
           ),
           AppBarAction.svg(
@@ -1173,8 +1181,14 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                                   label: 'Report Seller',
                                   svgAsset: 'assets/icons/flag.svg',
                                   onTap: () {
+                                    final int? productId =
+                                        _product?.id ?? int.tryParse(widget.adId ?? '');
                                     context.pushNamed(
-                                        AppRouteNames.dashboardReport);
+                                      AppRouteNames.dashboardReport,
+                                      extra: <String, dynamic>{
+                                        if (productId != null) 'productId': productId,
+                                      },
+                                    );
                                   },
                                 ),
                                 const SizedBox(width: 12),

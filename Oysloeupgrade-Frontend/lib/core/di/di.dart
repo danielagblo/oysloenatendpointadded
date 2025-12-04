@@ -139,6 +139,9 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<GetProductDetailUseCase>(
       () => GetProductDetailUseCase(sl()),
     )
+    ..registerLazySingleton<ReportProductUseCase>(
+      () => ReportProductUseCase(sl()),
+    )
     ..registerLazySingleton<GetRelatedProductsUseCase>(
       () => GetRelatedProductsUseCase(sl()),
     )

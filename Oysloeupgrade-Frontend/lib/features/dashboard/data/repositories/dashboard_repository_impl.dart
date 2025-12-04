@@ -269,6 +269,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
   }
 
+
   @override
   Future<Either<Failure, List<ChatMessageEntity>>> getChatMessages({
     required String chatRoomId,
@@ -516,6 +517,36 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } catch (error, stackTrace) {
       logError(
         'Unexpected delete product failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> reportProduct({
+    required int productId,
+    required String reason,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      await _remoteDataSource.reportProduct(
+        productId: productId,
+        reason: reason,
+      );
+      return right(null);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected product report failure',
         error: error,
         stackTrace: stackTrace,
       );

@@ -31,6 +31,11 @@ abstract class ProductsRemoteDataSource {
     required int productId,
   });
 
+  Future<void> reportProduct({
+    required int productId,
+    required String reason,
+  });
+
   Future<List<ReviewModel>> getProductReviews({
     required int productId,
   });
@@ -159,6 +164,25 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     try {
       await _client.delete<dynamic>(
         AppStrings.productDetailURL(productId.toString()),
+      );
+    } on DioException catch (error) {
+      throw ApiException(ApiHelper.getHumanReadableMessage(error));
+    } catch (error) {
+      throw ServerException(error.toString());
+    }
+  }
+
+  @override
+  Future<void> reportProduct({
+    required int productId,
+    required String reason,
+  }) async {
+    try {
+      await _client.post<dynamic>(
+        AppStrings.productReportURL(productId.toString()),
+        data: <String, dynamic>{
+          'reason': reason,
+        },
       );
     } on DioException catch (error) {
       throw ApiException(ApiHelper.getHumanReadableMessage(error));
