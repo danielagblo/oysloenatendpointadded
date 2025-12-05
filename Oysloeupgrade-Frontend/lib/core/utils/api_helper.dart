@@ -18,6 +18,23 @@ class ApiHelper {
   /// Extracts human-readable error message from Dio response
   static String getHumanReadableMessage(DioException error) {
     final Response<dynamic>? response = error.response;
+    
+    // Handle server errors (500, 502, 503, etc.) with user-friendly messages
+    if (response != null && response.statusCode != null) {
+      if (response.statusCode! >= 500) {
+        return 'Server error. Please try again in a moment.';
+      }
+      if (response.statusCode == 404) {
+        return 'Resource not found. Please try again.';
+      }
+      if (response.statusCode == 403) {
+        return 'You don\'t have permission to perform this action.';
+      }
+      if (response.statusCode == 401) {
+        return 'Please log in to continue.';
+      }
+    }
+    
     if (response?.data is Map<String, dynamic>) {
       final Map<String, dynamic> map =
           Map<String, dynamic>.from(response!.data as Map<String, dynamic>);
@@ -43,10 +60,27 @@ class ApiHelper {
         }
       }
     }
+    
+    // Handle connection errors
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'Connection timeout. Please check your internet connection.';
+    }
+    if (error.type == DioExceptionType.connectionError) {
+      return 'No internet connection. Please check your network.';
+    }
+    
     if (error.message != null && error.message!.isNotEmpty) {
+      // Don't show raw technical error messages to users
+      if (error.message!.contains('status code') ||
+          error.message!.contains('RequestOptions') ||
+          error.message!.contains('validateStatus')) {
+        return 'Server error. Please try again in a moment.';
+      }
       return error.message!;
     }
-    return 'Unable to complete request';
+    return 'Unable to complete request. Please try again.';
   }
 
   /// Gets user-friendly error message from DioException with fallback handling

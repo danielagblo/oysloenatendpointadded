@@ -6,6 +6,24 @@ import '../entities/chat_room_entity.dart';
 import '../entities/chat_message_entity.dart';
 import '../repositories/dashboard_repository.dart';
 
+class GetOrCreateChatRoomIdParams {
+  const GetOrCreateChatRoomIdParams({required this.productId});
+
+  final int productId;
+}
+
+class GetOrCreateChatRoomIdUseCase
+    implements UseCase<String, GetOrCreateChatRoomIdParams> {
+  GetOrCreateChatRoomIdUseCase(this._repository);
+
+  final DashboardRepository _repository;
+
+  @override
+  Future<Either<Failure, String>> call(GetOrCreateChatRoomIdParams params) {
+    return _repository.getOrCreateChatRoomId(productId: params.productId);
+  }
+}
+
 class GetChatRoomsUseCase
     implements UseCase<List<ChatRoomEntity>, NoParams> {
   GetChatRoomsUseCase(this._repository);

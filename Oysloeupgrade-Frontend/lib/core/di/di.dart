@@ -196,6 +196,9 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<RejectAccountDeleteRequestUseCase>(
       () => RejectAccountDeleteRequestUseCase(sl()),
     )
+    ..registerLazySingleton<GetOrCreateChatRoomIdUseCase>(
+      () => GetOrCreateChatRoomIdUseCase(sl()),
+    )
     ..registerLazySingleton<GetChatRoomsUseCase>(
       () => GetChatRoomsUseCase(sl()),
     )

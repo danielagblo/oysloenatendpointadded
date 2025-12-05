@@ -19,7 +19,10 @@ import 'package:oysloe_mobile/features/dashboard/domain/entities/review_entity.d
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_detail_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_reviews_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/mark_product_as_taken_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/chat_usecases.dart';
+import 'package:oysloe_mobile/core/usecase/usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/ad_card.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/ads_section.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/rating_overview.dart'
@@ -88,7 +91,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
   _AdDetailScreenState()
       : _getProductDetailUseCase = sl<GetProductDetailUseCase>(),
         _getProductReviewsUseCase = sl<GetProductReviewsUseCase>(),
-        _markProductAsTakenUseCase = sl<MarkProductAsTakenUseCase>();
+        _markProductAsTakenUseCase = sl<MarkProductAsTakenUseCase>(),
+        _getOrCreateChatRoomIdUseCase = sl<GetOrCreateChatRoomIdUseCase>(),
+        _sendChatMessageUseCase = sl<SendChatMessageUseCase>();
 
   bool _isExpanded = false;
   late final PageController _imagePageController;
@@ -109,6 +114,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
   final GetProductDetailUseCase _getProductDetailUseCase;
   final GetProductReviewsUseCase _getProductReviewsUseCase;
   final MarkProductAsTakenUseCase _markProductAsTakenUseCase;
+  final GetOrCreateChatRoomIdUseCase _getOrCreateChatRoomIdUseCase;
+  final SendChatMessageUseCase _sendChatMessageUseCase;
+  bool _isSendingMessage = false;
 
   ProductEntity? _productOverride;
   bool _isRefreshing = false;
@@ -220,14 +228,35 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     if (raw == null) return null;
     final String trimmed = raw.trim();
     if (trimmed.isEmpty) return null;
-    if (trimmed.startsWith('http')) return trimmed;
-
-    final Uri baseUri = Uri.parse(AppStrings.baseUrl);
-    final String origin = '${baseUri.scheme}://${baseUri.host}';
-    if (trimmed.startsWith('/')) {
-      return '$origin$trimmed';
+    
+    // If it's already a full URL, validate it
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      final uri = Uri.tryParse(trimmed);
+      if (uri != null && uri.hasScheme && uri.hasAuthority) {
+        return trimmed;
+      }
+      // Invalid URL, return null to show placeholder
+      return null;
     }
-    return '$origin/$trimmed';
+
+    // Build relative URL
+    try {
+      final Uri baseUri = Uri.parse(AppStrings.baseUrl);
+      final String origin = '${baseUri.scheme}://${baseUri.host}';
+      final String fullUrl = trimmed.startsWith('/') 
+          ? '$origin$trimmed' 
+          : '$origin/$trimmed';
+      
+      // Validate the constructed URL
+      final uri = Uri.tryParse(fullUrl);
+      if (uri != null && uri.hasScheme && uri.hasAuthority) {
+        return fullUrl;
+      }
+    } catch (e) {
+      // If URL construction fails, return null
+    }
+    
+    return null;
   }
 
   Widget _buildImageCarousel(List<String> images) {
@@ -312,13 +341,22 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
   }
 
   Widget _buildImageItem(String url) {
-    if (url.trim().isEmpty) {
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.isEmpty) {
       return _buildImagePlaceholder();
     }
 
-    if (url.startsWith('http')) {
+    // Validate URL before using it
+    if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+      // Try to parse the URL to validate it
+      final uri = Uri.tryParse(trimmedUrl);
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+        // Invalid URL, show placeholder
+        return _buildImagePlaceholder();
+      }
+      
       return Image.network(
-        url,
+        uri.toString(),
         fit: BoxFit.cover,
         headers: _imageHeaders(),
         errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
@@ -338,7 +376,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     }
 
     return Image.asset(
-      url,
+      trimmedUrl,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
     );
@@ -567,6 +605,82 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
           style: AppTypography.bodySmall,
         ),
       ),
+    );
+  }
+
+  Future<void> _handleSendQuickChatMessage() async {
+    final String messageText = _chatController.text.trim();
+    if (messageText.isEmpty || _isSendingMessage) return;
+
+    final ProductEntity? product = _product;
+    final int? productId = product?.id ?? int.tryParse(widget.adId ?? '');
+    if (productId == null) {
+      if (mounted) {
+        showErrorSnackBar(
+          context,
+          'Unable to start a chat. Please try again.',
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isSendingMessage = true;
+    });
+
+    // Step 1: Get or create chatroom ID
+    final chatRoomIdResult = await _getOrCreateChatRoomIdUseCase(
+      GetOrCreateChatRoomIdParams(productId: productId),
+    );
+
+    if (!mounted) return;
+
+    chatRoomIdResult.fold(
+      (failure) {
+        setState(() {
+          _isSendingMessage = false;
+        });
+        showErrorSnackBar(
+          context,
+          failure.message.isNotEmpty
+              ? failure.message
+              : 'Unable to start a chat. Please try again.',
+        );
+      },
+      (chatRoomId) async {
+        // Step 2: Send the message
+        final sendResult = await _sendChatMessageUseCase(
+          SendChatMessageParams(
+            chatRoomId: chatRoomId,
+            text: messageText,
+          ),
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _isSendingMessage = false;
+        });
+
+        sendResult.fold(
+          (failure) {
+            showErrorSnackBar(
+              context,
+              failure.message.isNotEmpty
+                  ? failure.message
+                  : 'Unable to send message. Please try again.',
+            );
+          },
+          (_) {
+            // Success! Show confirmation and clear input
+            _chatController.clear();
+            showSuccessSnackBar(
+              context,
+              'Chat with seller created! You can continue the conversation in your inbox.',
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1264,6 +1378,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                           Expanded(
                             child: TextField(
                               controller: _chatController,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _handleSendQuickChatMessage(),
+                              enabled: !_isSendingMessage,
                               decoration: InputDecoration(
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -1277,14 +1394,29 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                                     horizontal: 16, vertical: 12),
                                 filled: true,
                                 fillColor: AppColors.white,
-                                suffixIcon: IconButton(
-                                  onPressed: () {},
-                                  icon: SvgPicture.asset(
-                                    'assets/icons/send.svg',
-                                    width: 17,
-                                    height: 17,
-                                  ),
-                                ),
+                                suffixIcon: _isSendingMessage
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(12.0),
+                                        child: SizedBox(
+                                          width: 17,
+                                          height: 17,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              AppColors.blueGray374957,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : IconButton(
+                                        onPressed: _handleSendQuickChatMessage,
+                                        icon: SvgPicture.asset(
+                                          'assets/icons/send.svg',
+                                          width: 17,
+                                          height: 17,
+                                        ),
+                                      ),
                                 border: OutlineInputBorder(
                                   borderSide: BorderSide(
                                       color: AppColors.blueGray374957
@@ -1634,8 +1766,15 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                 color: AppColors.white,
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: BlocProvider(
-                    create: (_) => sl<ProductsCubit>()..fetch(),
+                  child: MultiBlocProvider(
+                    providers: [
+                      BlocProvider(
+                        create: (_) => sl<CategoriesCubit>()..fetch(),
+                      ),
+                      BlocProvider(
+                        create: (_) => sl<ProductsCubit>()..fetch(),
+                      ),
+                    ],
                     child: const AdsSection(),
                   ),
                 ),

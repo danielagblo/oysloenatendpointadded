@@ -304,26 +304,80 @@ class _ReviewsBottomSheetState extends State<ReviewsBottomSheet> {
     final isUrl = raw.startsWith('http://') || raw.startsWith('https://');
     final isSvg = raw.toLowerCase().endsWith('.svg');
 
-    if (isUrl && isSvg) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: SvgPicture.network(
-          raw,
-          width: 48,
-          height: 48,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-
+    // Validate URL before using it
     if (isUrl) {
+      final uri = Uri.tryParse(raw);
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+        // Invalid URL, show default avatar
+        return ClipRRect(
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.grayE4,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            width: 48,
+            height: 48,
+            child: SvgPicture.asset(
+              'assets/icons/bk_logo.svg',
+              width: 20,
+              height: 20,
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      }
+      
+      if (isSvg) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SvgPicture.network(
+            uri.toString(),
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+            placeholderBuilder: (context) => ClipRRect(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.grayE4,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                width: 48,
+                height: 48,
+                child: SvgPicture.asset(
+                  'assets/icons/bk_logo.svg',
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.network(
-          raw,
+          uri.toString(),
           width: 48,
           height: 48,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => ClipRRect(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.grayE4,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              width: 48,
+              height: 48,
+              child: SvgPicture.asset(
+                'assets/icons/bk_logo.svg',
+                width: 20,
+                height: 20,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -698,3 +752,4 @@ class ReviewComment {
     this.canEdit = false,
   });
 }
+

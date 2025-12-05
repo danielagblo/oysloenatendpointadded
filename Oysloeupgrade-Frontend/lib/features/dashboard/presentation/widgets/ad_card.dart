@@ -174,15 +174,23 @@ class AdCard extends StatelessWidget {
   }
 
   Widget _buildImage(String url) {
-    if (url.trim().isEmpty) {
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.isEmpty) {
       return _buildErrorWidget();
     }
 
     final Map<String, String>? headers = _imageHeaders();
 
-    if (url.startsWith('http')) {
+    if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+      // Validate URL before using it
+      final uri = Uri.tryParse(trimmedUrl);
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+        // Invalid URL, show error widget
+        return _buildErrorWidget();
+      }
+      
       return Image.network(
-        url,
+        uri.toString(),
         fit: BoxFit.cover,
         headers: headers,
         errorBuilder: (context, error, stackTrace) => _buildErrorWidget(),
@@ -194,7 +202,7 @@ class AdCard extends StatelessWidget {
     }
 
     return Image.asset(
-      url,
+      trimmedUrl,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => _buildErrorWidget(),
     );

@@ -118,6 +118,10 @@ abstract class DashboardRepository {
   });
 
   /// Chat
+  Future<Either<Failure, String>> getOrCreateChatRoomId({
+    required int productId,
+  });
+
   Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms();
 
   Future<Either<Failure, List<ChatMessageEntity>>> getChatMessages({

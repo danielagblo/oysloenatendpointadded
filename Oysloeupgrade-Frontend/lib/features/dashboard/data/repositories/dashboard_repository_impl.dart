@@ -245,6 +245,33 @@ class DashboardRepositoryImpl implements DashboardRepository {
   final Network _network;
 
   @override
+  Future<Either<Failure, String>> getOrCreateChatRoomId({
+    required int productId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final String chatRoomId = await _chatRemoteDataSource
+          .getOrCreateChatRoomId(productId: productId.toString());
+      return right(chatRoomId);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected get or create chat room id failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms() async {
     final bool isConnected = await _network.isConnected;
     if (!isConnected) {
