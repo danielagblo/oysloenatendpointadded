@@ -122,7 +122,9 @@ abstract class DashboardRepository {
     required int productId,
   });
 
-  Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms();
+  Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms({
+    bool? isSupport,
+  });
 
   Future<Either<Failure, List<ChatMessageEntity>>> getChatMessages({
     required String chatRoomId,

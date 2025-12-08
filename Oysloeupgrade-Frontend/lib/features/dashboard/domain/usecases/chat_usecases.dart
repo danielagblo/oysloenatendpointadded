@@ -24,15 +24,23 @@ class GetOrCreateChatRoomIdUseCase
   }
 }
 
+class GetChatRoomsParams {
+  const GetChatRoomsParams({this.isSupport});
+
+  final bool? isSupport;
+}
+
 class GetChatRoomsUseCase
-    implements UseCase<List<ChatRoomEntity>, NoParams> {
+    implements UseCase<List<ChatRoomEntity>, GetChatRoomsParams> {
   GetChatRoomsUseCase(this._repository);
 
   final DashboardRepository _repository;
 
   @override
-  Future<Either<Failure, List<ChatRoomEntity>>> call(NoParams params) {
-    return _repository.getChatRooms();
+  Future<Either<Failure, List<ChatRoomEntity>>> call(
+    GetChatRoomsParams params,
+  ) {
+    return _repository.getChatRooms(isSupport: params.isSupport);
   }
 }
 

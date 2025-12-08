@@ -9,6 +9,8 @@ class ChatRoomEntity {
     this.unreadCount = 0,
     this.isSupport = false,
     this.isClosed = false,
+    this.title,
+    this.productId,
   });
 
   final String id;
@@ -22,6 +24,10 @@ class ChatRoomEntity {
   /// When true, the support case is closed and users should not be able
   /// to send new messages (read-only room).
   final bool isClosed;
+  /// The title/name of the chatroom (e.g., product name for product-based chats)
+  final String? title;
+  /// The product ID associated with this chatroom (if any)
+  final int? productId;
 }
 
 

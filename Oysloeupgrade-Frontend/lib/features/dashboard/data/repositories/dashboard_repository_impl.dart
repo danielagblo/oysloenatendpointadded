@@ -272,15 +272,18 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
-  Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms() async {
+  Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms({
+    bool? isSupport,
+  }) async {
     final bool isConnected = await _network.isConnected;
     if (!isConnected) {
       return left(const NetworkFailure('No internet connection'));
     }
 
     try {
-      final List<ChatRoomEntity> rooms =
-          (await _chatRemoteDataSource.getChatRooms()).cast<ChatRoomEntity>();
+      final List<ChatRoomEntity> rooms = (await _chatRemoteDataSource
+              .getChatRooms(isSupport: isSupport))
+          .cast<ChatRoomEntity>();
       return right(rooms);
     } on ApiException catch (error) {
       return left(APIFailure(error.message));

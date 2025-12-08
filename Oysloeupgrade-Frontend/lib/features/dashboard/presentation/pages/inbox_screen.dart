@@ -191,7 +191,7 @@ class _InboxScreenState extends State<InboxScreen> {
           .map<Widget>(
             (ChatRoomEntity room) => _buildChatItem(
               chatId: room.id,
-              name: room.otherUserName,
+              name: room.title ?? room.otherUserName,
               message: room.lastMessage ?? 'Start chatting',
               time: _formatChatTime(room.lastMessageAt),
               avatar: room.otherUserAvatar ?? '',
@@ -358,11 +358,14 @@ class _InboxScreenState extends State<InboxScreen> {
   }) {
     return GestureDetector(
       onTap: () {
+        // Find the room to get the title
+        final room = context.read<ChatListCubit>().state.rooms
+            .firstWhere((r) => r.id == chatId);
         context.pushNamed(
           AppRouteNames.dashboardChat,
           pathParameters: {'chatId': chatId},
           extra: <String, dynamic>{
-            'otherUserName': name,
+            'otherUserName': room.title ?? name,
             'otherUserAvatar': avatar,
             'isClosed': isClosed,
           },

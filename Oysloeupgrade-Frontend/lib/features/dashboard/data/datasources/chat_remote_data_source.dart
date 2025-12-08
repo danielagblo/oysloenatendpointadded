@@ -8,7 +8,9 @@ import '../models/chat_models.dart';
 abstract class ChatRemoteDataSource {
   Future<String> getOrCreateChatRoomId({required String productId});
 
-  Future<List<ChatRoomModel>> getChatRooms();
+  Future<List<ChatRoomModel>> getChatRooms({
+    bool? isSupport,
+  });
 
   Future<List<ChatMessageModel>> getMessages({
     required String chatRoomId,
@@ -47,10 +49,27 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Future<List<ChatRoomModel>> getChatRooms() async {
+  Future<List<ChatRoomModel>> getChatRooms({
+    bool? isSupport,
+  }) async {
     try {
-      final Response<dynamic> response =
-          await _client.get<dynamic>(AppStrings.chatRoomsURL);
+      final Map<String, dynamic> queryParams = <String, dynamic>{};
+      
+      // Add query parameters to filter by chat type
+      if (isSupport != null) {
+        // Try both 'is_support' and 'kind' parameters (API might use either)
+        queryParams['is_support'] = isSupport;
+        if (isSupport) {
+          queryParams['kind'] = 'support';
+        } else {
+          queryParams['kind'] = 'chat';
+        }
+      }
+      
+      final Response<dynamic> response = await _client.get<dynamic>(
+        AppStrings.chatRoomsURL,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
       final dynamic data = response.data;
       if (data is List<dynamic>) {
         return data

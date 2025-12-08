@@ -37,9 +37,9 @@ class ChatListCubit extends Cubit<ChatListState> {
 
   final GetChatRoomsUseCase _getRooms;
 
-  Future<void> load() async {
+  Future<void> load({bool? isSupport}) async {
     emit(state.copyWith(loading: true, resetMessage: true));
-    final result = await _getRooms(const NoParams());
+    final result = await _getRooms(GetChatRoomsParams(isSupport: isSupport));
     result.fold(
       (failure) => emit(
         state.copyWith(
