@@ -113,11 +113,17 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<AlertsRemoteDataSource>(
       () => AlertsRemoteDataSourceImpl(client: sl()),
     )
+    ..registerLazySingleton<SubscriptionRemoteDataSource>(
+      () => SubscriptionRemoteDataSource(client: sl()),
+    )
     ..registerLazySingleton<AccountDeleteRequestsRemoteDataSource>(
       () => AccountDeleteRequestsRemoteDataSourceImpl(client: sl()),
     )
     ..registerLazySingleton<ChatRemoteDataSource>(
       () => ChatRemoteDataSourceImpl(client: sl()),
+    )
+    ..registerLazySingleton<ReferralRemoteDataSource>(
+      () => ReferralRemoteDataSourceImpl(client: sl()),
     )
     ..registerLazySingleton<DashboardRepository>(
       () => DashboardRepositoryImpl(
@@ -127,8 +133,12 @@ Future<void> _initDashboard() async {
         alertsRemoteDataSource: sl(),
         accountDeleteRequestsRemoteDataSource: sl(),
         chatRemoteDataSource: sl(),
+        referralRemoteDataSource: sl(),
         network: sl(),
       ),
+    )
+    ..registerLazySingleton<SubscriptionRepository>(
+      () => SubscriptionRepository(remoteDataSource: sl()),
     )
     ..registerLazySingleton<GetProductsUseCase>(
       () => GetProductsUseCase(sl()),
@@ -142,8 +152,35 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<ReportProductUseCase>(
       () => ReportProductUseCase(sl()),
     )
+    ..registerLazySingleton<SubmitFeedbackUseCase>(
+      () => SubmitFeedbackUseCase(sl()),
+    )
+    ..registerLazySingleton<GetReferralInfoUseCase>(
+      () => GetReferralInfoUseCase(sl()),
+    )
+    ..registerLazySingleton<GetReferralTransactionsUseCase>(
+      () => GetReferralTransactionsUseCase(sl()),
+    )
+    ..registerLazySingleton<RedeemCouponUseCase>(
+      () => RedeemCouponUseCase(sl()),
+    )
     ..registerLazySingleton<GetRelatedProductsUseCase>(
       () => GetRelatedProductsUseCase(sl()),
+    )
+    ..registerLazySingleton<GetUserSubscriptionUseCase>(
+      () => GetUserSubscriptionUseCase(sl()),
+    )
+    ..registerLazySingleton<GetAvailableSubscriptionsUseCase>(
+      () => GetAvailableSubscriptionsUseCase(sl()),
+    )
+    ..registerLazySingleton<CreateUserSubscriptionUseCase>(
+      () => CreateUserSubscriptionUseCase(sl()),
+    )
+    ..registerLazySingleton<UpdateUserSubscriptionUseCase>(
+      () => UpdateUserSubscriptionUseCase(sl()),
+    )
+    ..registerLazySingleton<InitializePaystackPaymentUseCase>(
+      () => InitializePaystackPaymentUseCase(sl()),
     )
     ..registerLazySingleton<GetCategoriesUseCase>(
       () => GetCategoriesUseCase(sl()),

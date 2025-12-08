@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:responsive_sizer/responsive_sizer.dart';
-
+import 'package:oysloe_mobile/core/common/widgets/app_snackbar.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/referral_usecases.dart';
+import 'package:responsive_sizer/responsive_sizer.dart';
 
 class RedeemBottomSheet extends StatefulWidget {
   const RedeemBottomSheet({super.key});
@@ -14,11 +16,49 @@ class RedeemBottomSheet extends StatefulWidget {
 
 class _RedeemBottomSheetState extends State<RedeemBottomSheet> {
   final TextEditingController _codeController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRedeem() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) {
+      showErrorSnackBar(context, 'Please enter a coupon code');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    FocusScope.of(context).unfocus();
+
+    final redeemCouponUseCase = sl<RedeemCouponUseCase>();
+    final result = await redeemCouponUseCase(RedeemCouponParams(code: code));
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+    });
+
+    result.fold(
+      (failure) => showErrorSnackBar(
+        context,
+        failure.message.isEmpty
+            ? 'Unable to redeem coupon. Please try again.'
+            : failure.message,
+      ),
+      (_) {
+        showSuccessSnackBar(context, 'Coupon redeemed successfully!');
+        _codeController.clear();
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override
@@ -141,15 +181,7 @@ class _RedeemBottomSheetState extends State<RedeemBottomSheet> {
                               ),
                               SizedBox(width: 3.w),
                               GestureDetector(
-                                onTap: () {
-                                  FocusScope.of(context).unfocus();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Coupon applied!'),
-                                      backgroundColor: AppColors.blueGray374957,
-                                    ),
-                                  );
-                                },
+                                onTap: _isSubmitting ? null : _handleRedeem,
                                 child: Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 5.w,
@@ -163,12 +195,25 @@ class _RedeemBottomSheetState extends State<RedeemBottomSheet> {
                                           .withValues(alpha: 0.8),
                                     ),
                                   ),
-                                  child: Text(
-                                    'Apply',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                  child: _isSubmitting
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              AppColors.blueGray374957,
+                                            ),
+                                          ),
+                                        )
+                                      : Text(
+                                          'Apply',
+                                          style: AppTypography.bodySmall
+                                              .copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],

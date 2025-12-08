@@ -7,9 +7,13 @@ import '../entities/chat_message_entity.dart';
 import '../repositories/dashboard_repository.dart';
 
 class GetOrCreateChatRoomIdParams {
-  const GetOrCreateChatRoomIdParams({required this.productId});
+  const GetOrCreateChatRoomIdParams({
+    required this.productId,
+    this.userId,
+  });
 
   final int productId;
+  final String? userId;
 }
 
 class GetOrCreateChatRoomIdUseCase
@@ -20,7 +24,10 @@ class GetOrCreateChatRoomIdUseCase
 
   @override
   Future<Either<Failure, String>> call(GetOrCreateChatRoomIdParams params) {
-    return _repository.getOrCreateChatRoomId(productId: params.productId);
+    return _repository.getOrCreateChatRoomId(
+      productId: params.productId,
+      userId: params.userId,
+    );
   }
 }
 

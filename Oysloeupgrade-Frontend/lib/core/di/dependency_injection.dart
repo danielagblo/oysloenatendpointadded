@@ -32,7 +32,10 @@ import 'package:oysloe_mobile/features/dashboard/data/datasources/categories_loc
 import 'package:oysloe_mobile/features/dashboard/data/datasources/alerts_remote_data_source.dart';
 import 'package:oysloe_mobile/features/dashboard/data/datasources/account_delete_requests_remote_data_source.dart';
 import 'package:oysloe_mobile/features/dashboard/data/datasources/chat_remote_data_source.dart';
+import 'package:oysloe_mobile/features/dashboard/data/datasources/referral_remote_data_source.dart';
+import 'package:oysloe_mobile/features/dashboard/data/datasources/subscription_remote_data_source.dart';
 import 'package:oysloe_mobile/features/dashboard/data/repositories/dashboard_repository_impl.dart';
+import 'package:oysloe_mobile/features/dashboard/data/repositories/subscription_repository.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_products_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_reviews_usecase.dart';
@@ -46,10 +49,12 @@ import 'package:oysloe_mobile/features/dashboard/domain/usecases/set_product_sta
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/delete_product_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/account_delete_requests_usecases.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/chat_usecases.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/subscription_usecases.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_categories_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_alerts_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/mark_alert_read_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/delete_alert_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/referral_usecases.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/alerts/alerts_cubit.dart';

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:oysloe_mobile/core/common/widgets/buttons.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
+import 'package:oysloe_mobile/core/common/widgets/app_snackbar.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_detail_usecase.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -15,6 +18,7 @@ class FeedbackScreen extends StatefulWidget {
 class _FeedbackScreenState extends State<FeedbackScreen> {
   int _selectedRating = 0;
   final TextEditingController _commentController = TextEditingController();
+  bool _isSubmitting = false;
 
   final List<String> _ratingLabels = [
     'Poor',
@@ -34,6 +38,53 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     setState(() {
       _selectedRating = rating;
     });
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_selectedRating == 0) {
+      showErrorSnackBar(context, 'Please select a rating before submitting.');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final SubmitFeedbackUseCase useCase = sl<SubmitFeedbackUseCase>();
+    final result = await useCase(
+      SubmitFeedbackParams(
+        rating: _selectedRating,
+        comment: _commentController.text.trim().isEmpty
+            ? null
+            : _commentController.text.trim(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+    });
+
+    result.fold(
+      (failure) => showErrorSnackBar(
+        context,
+        failure.message.isEmpty
+            ? 'Unable to submit feedback. Please try again.'
+            : failure.message,
+      ),
+      (_) {
+        showSuccessSnackBar(
+          context,
+          'Thank you for your feedback! We appreciate your input.',
+        );
+        // Clear the form
+        setState(() {
+          _selectedRating = 0;
+          _commentController.clear();
+        });
+      },
+    );
   }
 
   @override
@@ -146,9 +197,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           child: CustomButton.filled(
                               label: 'Send Feedback',
                               backgroundColor: AppColors.white,
-                              onPressed: () {
-                                // Handle submit action
-                              }),
+                              isLoading: _isSubmitting,
+                              onPressed: _isSubmitting ? null : _handleSubmit),
                         ),
                         SizedBox(height: 2.h),
                       ],

@@ -6,7 +6,10 @@ import '../../../../core/utils/api_helper.dart';
 import '../models/chat_models.dart';
 
 abstract class ChatRemoteDataSource {
-  Future<String> getOrCreateChatRoomId({required String productId});
+  Future<String> getOrCreateChatRoomId({
+    required String productId,
+    String? userId,
+  });
 
   Future<List<ChatRoomModel>> getChatRooms({
     bool? isSupport,
@@ -30,11 +33,23 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final Dio _client;
 
   @override
-  Future<String> getOrCreateChatRoomId({required String productId}) async {
+  Future<String> getOrCreateChatRoomId({
+    required String productId,
+    String? userId,
+  }) async {
     try {
+      final Map<String, dynamic> queryParams = <String, dynamic>{
+        'product': productId,
+      };
+
+      // Temporary workaround: backend currently expects user_id in query.
+      if (userId != null && userId.isNotEmpty) {
+        queryParams['user_id'] = userId;
+      }
+
       final Response<dynamic> response = await _client.get<dynamic>(
         AppStrings.chatRoomIdURL,
-        queryParameters: <String, dynamic>{'product': productId},
+        queryParameters: queryParams,
       );
       final dynamic data = response.data;
       if (data is Map<String, dynamic> && data['id'] != null) {

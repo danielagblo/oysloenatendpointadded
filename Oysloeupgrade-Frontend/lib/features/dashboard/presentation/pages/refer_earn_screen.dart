@@ -3,8 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
+import 'package:oysloe_mobile/core/common/widgets/app_snackbar.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
+import 'package:oysloe_mobile/core/usecase/usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/referral_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/referral_usecases.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/earn_info_bottom_sheet.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/level_info_bottom_sheet.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/redeem_bottom_sheet.dart';
@@ -18,14 +23,96 @@ class ReferAndEarnScreen extends StatefulWidget {
 }
 
 class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
-  final String _referralCode = 'DAN2785';
+  ReferralEntity? _referralInfo;
+  List<PointsTransactionEntity> _transactions = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  // Default fallback values to show UI even when API fails
+  ReferralEntity get _displayReferralInfo {
+    return _referralInfo ??
+        const ReferralEntity(
+          referralCode: 'DAN2785',
+          points: 10000,
+          cashEquivalent: 10,
+          currentLevel: 'Gold',
+          pointsToNextLevel: 9000,
+          totalPointsForNextLevel: 100000,
+          friendsReferred: 0,
+        );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReferralData();
+  }
+
+  Future<void> _loadReferralData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final getReferralInfoUseCase = sl<GetReferralInfoUseCase>();
+    final getTransactionsUseCase = sl<GetReferralTransactionsUseCase>();
+
+    final referralResult = await getReferralInfoUseCase(const NoParams());
+    final transactionsResult = await getTransactionsUseCase(const NoParams());
+
+    if (!mounted) return;
+
+    referralResult.fold(
+      (failure) {
+        // Use default values instead of showing error screen
+        if (mounted) {
+          setState(() {
+            _errorMessage = failure.message.isEmpty
+                ? 'Unable to load referral information'
+                : failure.message;
+            _isLoading = false;
+            // Keep _referralInfo as null to use default values
+          });
+        }
+      },
+      (referral) {
+        if (mounted) {
+          setState(() {
+            _referralInfo = referral;
+            _errorMessage = null; // Clear any previous errors
+          });
+        }
+      },
+    );
+
+    transactionsResult.fold(
+      (failure) {
+        // Don't show error for transactions, just use empty list
+        if (mounted) {
+          setState(() {
+            _transactions = [];
+            _isLoading = false;
+          });
+        }
+      },
+      (transactions) {
+        if (mounted) {
+          setState(() {
+            _transactions = transactions;
+            _isLoading = false;
+          });
+        }
+      },
+    );
+  }
 
   void _showEarnInfoSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => EarnInfoBottomSheet(referralCode: _referralCode),
+      builder: (context) =>
+          EarnInfoBottomSheet(referralCode: _displayReferralInfo.referralCode),
     );
   }
 
@@ -48,26 +135,28 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
   }
 
   void _showPointsSummarySheet() {
-    const transactions = [
-      _PointsTransaction(date: 'Apr 7, 2024', points: 20, amount: 430),
-      _PointsTransaction(date: 'Apr 7, 2024', points: 20, amount: 430),
-      _PointsTransaction(date: 'Apr 7, 2024', points: 20, amount: 430),
-      _PointsTransaction(date: 'Apr 7, 2024', points: 20, amount: 430),
-    ];
+    final transactions = _transactions.map((t) {
+      final dateFormat = DateFormat('MMM d, yyyy');
+      return _PointsTransaction(
+        date: dateFormat.format(t.date),
+        points: t.points,
+        amount: t.amount,
+      );
+    }).toList();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _PointsSummaryBottomSheet(
-        cashEquivalent: 10,
+        cashEquivalent: _displayReferralInfo.cashEquivalent,
         transactions: transactions,
       ),
     );
   }
 
   void _copyReferralCode() {
-    Clipboard.setData(ClipboardData(text: _referralCode));
+    Clipboard.setData(ClipboardData(text: _displayReferralInfo.referralCode));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Referral code copied!'),
@@ -86,36 +175,81 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
         title: 'Refer and Earn',
         backgroundColor: AppColors.white,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: 1.2.h),
-            _PointsCard(
-              points: 10000,
-              cashEquivalent: 10,
-              onPointsTap: _showPointsSummarySheet,
-              onEarnTap: _showEarnInfoSheet,
-              onRedeemTap: _showRedeemSheet,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_errorMessage != null) ...[
+                    SizedBox(height: 1.h),
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 4.w),
+                      padding: EdgeInsets.all(3.w),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.orange.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.orange.shade700,
+                            size: 20,
+                          ),
+                          SizedBox(width: 2.w),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _loadReferralData,
+                            child: Text(
+                              'Retry',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: Colors.orange.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: 1.2.h),
+                  _PointsCard(
+                    points: _displayReferralInfo.points,
+                    cashEquivalent: _displayReferralInfo.cashEquivalent,
+                    onPointsTap: _showPointsSummarySheet,
+                    onEarnTap: _showEarnInfoSheet,
+                    onRedeemTap: _showRedeemSheet,
+                  ),
+                  SizedBox(height: 1.2.h),
+                  _LevelCard(
+                    currentLevel: _displayReferralInfo.currentLevel,
+                    progress: _displayReferralInfo.progress,
+                    pointsToNext: _displayReferralInfo.pointsToNextLevel,
+                    totalToNext: _displayReferralInfo.totalPointsForNextLevel,
+                    onInfoTap: _showLevelInfoSheet,
+                  ),
+                  SizedBox(height: 1.2.h),
+                  _ReferralSection(
+                    referralCode: _displayReferralInfo.referralCode,
+                    onCopyTap: _copyReferralCode,
+                    friendsReferred: _displayReferralInfo.friendsReferred,
+                  ),
+                  SizedBox(height: 2.h),
+                ],
+              ),
             ),
-            SizedBox(height: 1.2.h),
-            _LevelCard(
-              currentLevel: 'Gold',
-              progress: 0.9,
-              pointsToNext: 9000,
-              totalToNext: 100000,
-              onInfoTap: _showLevelInfoSheet,
-            ),
-            SizedBox(height: 1.2.h),
-            _ReferralSection(
-              referralCode: _referralCode,
-              onCopyTap: _copyReferralCode,
-              friendsReferred: 0,
-            ),
-            SizedBox(height: 2.h),
-          ],
-        ),
-      ),
     );
   }
 }

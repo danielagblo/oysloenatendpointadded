@@ -56,3 +56,30 @@ class GetProductDetailParams extends Equatable {
   @override
   List<Object> get props => <Object>[id];
 }
+
+class SubmitFeedbackParams extends Equatable {
+  const SubmitFeedbackParams({
+    required this.rating,
+    this.comment,
+  });
+
+  final int rating;
+  final String? comment;
+
+  @override
+  List<Object?> get props => <Object?>[rating, comment];
+}
+
+class SubmitFeedbackUseCase extends UseCase<void, SubmitFeedbackParams> {
+  SubmitFeedbackUseCase(this._repository);
+
+  final DashboardRepository _repository;
+
+  @override
+  Future<Either<Failure, void>> call(SubmitFeedbackParams params) {
+    return _repository.submitFeedback(
+      rating: params.rating,
+      comment: params.comment,
+    );
+  }
+}

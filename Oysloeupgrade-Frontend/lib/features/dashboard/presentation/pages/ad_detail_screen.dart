@@ -614,6 +614,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
 
     final ProductEntity? product = _product;
     final int? productId = product?.id ?? int.tryParse(widget.adId ?? '');
+    final String? userId = _currentUserId;
     if (productId == null) {
       if (mounted) {
         showErrorSnackBar(
@@ -630,7 +631,10 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
 
     // Step 1: Get or create chatroom ID
     final chatRoomIdResult = await _getOrCreateChatRoomIdUseCase(
-      GetOrCreateChatRoomIdParams(productId: productId),
+      GetOrCreateChatRoomIdParams(
+        productId: productId,
+        userId: userId,
+      ),
     );
 
     if (!mounted) return;

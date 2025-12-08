@@ -18,8 +18,10 @@ import '../datasources/categories_local_data_source.dart';
 import '../datasources/alerts_remote_data_source.dart';
 import '../datasources/account_delete_requests_remote_data_source.dart';
 import '../datasources/chat_remote_data_source.dart';
+import '../datasources/referral_remote_data_source.dart';
 import '../models/category_model.dart';
 import '../models/alert_model.dart';
+import '../../domain/entities/referral_entity.dart';
 
 class DashboardRepositoryImpl implements DashboardRepository {
   static const Duration _categoriesCacheTtl = Duration(hours: 12);
@@ -31,6 +33,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required AccountDeleteRequestsRemoteDataSource
         accountDeleteRequestsRemoteDataSource,
     required ChatRemoteDataSource chatRemoteDataSource,
+    required ReferralRemoteDataSource referralRemoteDataSource,
     required Network network,
   })  : _remoteDataSource = remoteDataSource,
         _categoriesRemoteDataSource = categoriesRemoteDataSource,
@@ -39,6 +42,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
         _accountDeleteRequestsRemoteDataSource =
             accountDeleteRequestsRemoteDataSource,
         _chatRemoteDataSource = chatRemoteDataSource,
+        _referralRemoteDataSource = referralRemoteDataSource,
         _network = network;
 
   final ProductsRemoteDataSource _remoteDataSource;
@@ -48,6 +52,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   final AccountDeleteRequestsRemoteDataSource
       _accountDeleteRequestsRemoteDataSource;
   final ChatRemoteDataSource _chatRemoteDataSource;
+  final ReferralRemoteDataSource _referralRemoteDataSource;
 
   @override
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>
@@ -247,6 +252,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   @override
   Future<Either<Failure, String>> getOrCreateChatRoomId({
     required int productId,
+    String? userId,
   }) async {
     final bool isConnected = await _network.isConnected;
     if (!isConnected) {
@@ -255,7 +261,10 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
     try {
       final String chatRoomId = await _chatRemoteDataSource
-          .getOrCreateChatRoomId(productId: productId.toString());
+          .getOrCreateChatRoomId(
+        productId: productId.toString(),
+        userId: userId,
+      );
       return right(chatRoomId);
     } on ApiException catch (error) {
       return left(APIFailure(error.message));
@@ -585,6 +594,36 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
+  Future<Either<Failure, void>> submitFeedback({
+    required int rating,
+    String? comment,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      await _remoteDataSource.submitFeedback(
+        rating: rating,
+        comment: comment,
+      );
+      return right(null);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected feedback submission failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<ReviewEntity>>> getProductReviews({
     required int productId,
   }) async {
@@ -862,6 +901,84 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } catch (error, stackTrace) {
       logError(
         'Unexpected create product failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ReferralEntity>> getReferralInfo() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final ReferralEntity referral =
+          await _referralRemoteDataSource.getReferralInfo();
+      return right(referral);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected referral info fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<PointsTransactionEntity>>>
+      getReferralTransactions() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<PointsTransactionEntity> transactions =
+          (await _referralRemoteDataSource.getReferralTransactions())
+              .cast<PointsTransactionEntity>();
+      return right(transactions);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected referral transactions fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> redeemCoupon({
+    required String code,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      await _referralRemoteDataSource.redeemCoupon(code);
+      return right(null);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected coupon redeem failure',
         error: error,
         stackTrace: stackTrace,
       );

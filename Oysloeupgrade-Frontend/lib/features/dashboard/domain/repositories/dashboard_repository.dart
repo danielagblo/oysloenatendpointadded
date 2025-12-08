@@ -9,6 +9,7 @@ import '../entities/account_delete_request_entity.dart';
 import '../entities/chat_room_entity.dart';
 import '../entities/chat_message_entity.dart';
 import '../entities/account_delete_request_entity.dart';
+import '../entities/referral_entity.dart';
 
 abstract class DashboardRepository {
   Future<Either<Failure, List<ProductEntity>>> getProducts({
@@ -40,6 +41,11 @@ abstract class DashboardRepository {
   Future<Either<Failure, void>> reportProduct({
     required int productId,
     required String reason,
+  });
+
+  Future<Either<Failure, void>> submitFeedback({
+    required int rating,
+    String? comment,
   });
 
   Future<Either<Failure, List<ReviewEntity>>> getProductReviews({
@@ -120,6 +126,7 @@ abstract class DashboardRepository {
   /// Chat
   Future<Either<Failure, String>> getOrCreateChatRoomId({
     required int productId,
+    String? userId,
   });
 
   Future<Either<Failure, List<ChatRoomEntity>>> getChatRooms({
@@ -137,5 +144,15 @@ abstract class DashboardRepository {
 
   Future<Either<Failure, void>> markChatRoomRead({
     required String chatRoomId,
+  });
+
+  /// Referral & Points
+  Future<Either<Failure, ReferralEntity>> getReferralInfo();
+
+  Future<Either<Failure, List<PointsTransactionEntity>>>
+      getReferralTransactions();
+
+  Future<Either<Failure, void>> redeemCoupon({
+    required String code,
   });
 }

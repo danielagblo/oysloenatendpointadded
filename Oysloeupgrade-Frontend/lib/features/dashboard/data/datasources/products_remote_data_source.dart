@@ -61,6 +61,11 @@ abstract class ProductsRemoteDataSource {
     String? duration,
     List<String>? images,
   });
+
+  Future<void> submitFeedback({
+    required int rating,
+    String? comment,
+  });
 }
 
 class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
@@ -331,6 +336,28 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
       );
 
       return _parseProduct(response.data);
+    } on DioException catch (error) {
+      throw ApiException(ApiHelper.getHumanReadableMessage(error));
+    } catch (error) {
+      throw ServerException(error.toString());
+    }
+  }
+
+  @override
+  Future<void> submitFeedback({
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      await _client.post<dynamic>(
+        AppStrings.feedbackURL,
+        data: <String, dynamic>{
+          'rating': rating,
+          'message': comment != null && comment.trim().isNotEmpty
+              ? comment.trim()
+              : '',
+        },
+      );
     } on DioException catch (error) {
       throw ApiException(ApiHelper.getHumanReadableMessage(error));
     } catch (error) {

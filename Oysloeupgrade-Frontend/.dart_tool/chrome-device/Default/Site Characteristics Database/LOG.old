@@ -1,13 +1,7 @@
-2025/12/05-16:08:16.251 569c Reusing MANIFEST C:\Users\judeb\AppData\Local\Temp\flutter_tools.7c67c862\flutter_tools_chrome_device.71fd31a5\Default\Site Characteristics Database/MANIFEST-000001
-2025/12/05-16:08:16.253 569c Recovering log #3
-2025/12/05-16:08:16.253 569c Level-0 table #13: started
-2025/12/05-16:08:16.260 569c Level-0 table #13: 257 bytes OK
-2025/12/05-16:08:16.260 569c Recovering log #6
-2025/12/05-16:08:16.261 569c Level-0 table #14: started
-2025/12/05-16:08:16.266 569c Level-0 table #14: 204 bytes OK
-2025/12/05-16:08:16.266 569c Recovering log #10
-2025/12/05-16:08:16.267 569c Reusing old log C:\Users\judeb\AppData\Local\Temp\flutter_tools.7c67c862\flutter_tools_chrome_device.71fd31a5\Default\Site Characteristics Database/000010.log 
-2025/12/05-16:08:16.270 569c Delete type=0 #3
-2025/12/05-16:08:16.270 569c Delete type=2 #4
-2025/12/05-16:08:16.270 569c Delete type=2 #6
-2025/12/05-16:08:16.270 569c Delete type=0 #6
+2025/12/08-10:37:38.296 4c98 Reusing MANIFEST C:\Users\judeb\AppData\Local\Temp\flutter_tools.5efe0887\flutter_tools_chrome_device.687ca3d6\Default\Site Characteristics Database/MANIFEST-000001
+2025/12/08-10:37:38.297 4c98 Recovering log #10
+2025/12/08-10:37:38.298 4c98 Reusing old log C:\Users\judeb\AppData\Local\Temp\flutter_tools.5efe0887\flutter_tools_chrome_device.687ca3d6\Default\Site Characteristics Database/000010.log 
+2025/12/08-10:37:38.299 4c98 Delete type=0 #3
+2025/12/08-10:37:38.299 4c98 Delete type=2 #4
+2025/12/08-10:37:38.299 4c98 Delete type=2 #6
+2025/12/08-10:37:38.299 4c98 Delete type=0 #6

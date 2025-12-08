@@ -70,5 +70,13 @@ class AppStrings {
       '$apiBasePath/chatrooms/$id/messages/';
   static String chatRoomSendMessageURL(String id) =>
       '$apiBasePath/chatrooms/$id/send/';
+
+  // Feedback
+  static const String feedbackURL = '$apiBasePath/feedback/';
+
+  // Referral & Points
+  static const String referralURL = '$apiBasePath/referrals/';
+  static const String referralTransactionsURL = '$apiBasePath/referrals/transactions/';
+  static const String redeemCouponURL = '$apiBasePath/referrals/redeem/';
   // TODO: add the remaining endpoints from the schema as they are implemented.
 }
