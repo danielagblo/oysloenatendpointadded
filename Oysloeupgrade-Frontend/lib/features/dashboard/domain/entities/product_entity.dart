@@ -17,6 +17,7 @@ class ProductEntity extends Equatable {
     required this.updatedAt,
     this.totalReports = 0,
     this.totalFavourites = 0,
+    this.isFavourite = false,
     this.location,
     this.isTaken = false,
   });
@@ -36,6 +37,7 @@ class ProductEntity extends Equatable {
   final DateTime updatedAt;
   final int totalReports;
   final int totalFavourites;
+  final bool isFavourite;
   final ProductLocation? location;
   final bool isTaken;
 
@@ -56,6 +58,7 @@ class ProductEntity extends Equatable {
         updatedAt,
         totalReports,
         totalFavourites,
+        isFavourite,
         location,
         isTaken,
       ];

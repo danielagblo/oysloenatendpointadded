@@ -237,6 +237,15 @@ final List<RouteBase> routes = <RouteBase>[
                     BlocProvider<CategoriesCubit>(
                       create: (_) => sl<CategoriesCubit>()..fetch(),
                     ),
+                    BlocProvider<SubcategoriesCubit>(
+                      create: (_) => sl<SubcategoriesCubit>(),
+                    ),
+                    BlocProvider<FeaturesCubit>(
+                      create: (_) => sl<FeaturesCubit>(),
+                    ),
+                    BlocProvider<LocationsCubit>(
+                      create: (_) => sl<LocationsCubit>()..fetch(),
+                    ),
                   ],
                   child: PostAdFormScreen(selectedImages: selectedImages),
                 ),

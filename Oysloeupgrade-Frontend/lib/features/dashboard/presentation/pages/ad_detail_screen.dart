@@ -20,6 +20,7 @@ import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_det
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_reviews_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/mark_product_as_taken_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/chat_usecases.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/favourites_usecases.dart';
 import 'package:oysloe_mobile/core/usecase/usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
@@ -93,7 +94,8 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
         _getProductReviewsUseCase = sl<GetProductReviewsUseCase>(),
         _markProductAsTakenUseCase = sl<MarkProductAsTakenUseCase>(),
         _getOrCreateChatRoomIdUseCase = sl<GetOrCreateChatRoomIdUseCase>(),
-        _sendChatMessageUseCase = sl<SendChatMessageUseCase>();
+        _sendChatMessageUseCase = sl<SendChatMessageUseCase>(),
+        _toggleFavouriteUseCase = sl<ToggleFavouriteUseCase>();
 
   bool _isExpanded = false;
   late final PageController _imagePageController;
@@ -116,7 +118,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
   final MarkProductAsTakenUseCase _markProductAsTakenUseCase;
   final GetOrCreateChatRoomIdUseCase _getOrCreateChatRoomIdUseCase;
   final SendChatMessageUseCase _sendChatMessageUseCase;
+  final ToggleFavouriteUseCase _toggleFavouriteUseCase;
   bool _isSendingMessage = false;
+  bool _isTogglingFavourite = false;
 
   ProductEntity? _productOverride;
   bool _isRefreshing = false;
@@ -836,6 +840,94 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     });
   }
 
+  Future<void> _handleToggleFavourite() async {
+    final ProductEntity? product = _product;
+    final int? productId = product?.id ?? int.tryParse(widget.adId ?? '');
+    if (_isTogglingFavourite) return;
+    if (productId == null || productId <= 0) {
+      if (mounted) {
+        showErrorSnackBar(
+          context,
+          'Unable to update favourite for this ad. Please refresh the ad and try again.',
+        );
+      }
+      return;
+    }
+
+    if (product == null) return;
+
+    // Store original product in case we need to revert
+    final ProductEntity originalProduct = product;
+    
+    // Optimistically update UI immediately
+    final bool newFavouriteState = !product.isFavourite;
+    final int newFavouriteCount = newFavouriteState
+        ? product.totalFavourites + 1
+        : (product.totalFavourites > 0 ? product.totalFavourites - 1 : 0);
+    
+    final ProductEntity optimisticProduct = ProductEntity(
+      id: product.id,
+      pid: product.pid,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      type: product.type,
+      status: product.status,
+      image: product.image,
+      images: product.images,
+      productFeatures: product.productFeatures,
+      category: product.category,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      totalReports: product.totalReports,
+      totalFavourites: newFavouriteCount,
+      isFavourite: newFavouriteState,
+      location: product.location,
+      isTaken: product.isTaken,
+    );
+
+    setState(() {
+      _isTogglingFavourite = true;
+      _productOverride = optimisticProduct;
+    });
+
+    final result = await _toggleFavouriteUseCase(
+      ToggleFavouriteParams(productId: productId),
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        // Revert to original product on failure
+        setState(() {
+          _productOverride = originalProduct;
+        });
+        showErrorSnackBar(
+          context,
+          failure.message.isEmpty
+              ? 'Unable to update favourite.'
+              : failure.message,
+        );
+      },
+      (updatedProduct) {
+        setState(() {
+          _productOverride = updatedProduct;
+        });
+        if (updatedProduct.isFavourite) {
+          showSuccessSnackBar(context, 'Added to favorites');
+        }
+        
+        // That message should only appear when removing from favorites screen
+      },
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isTogglingFavourite = false;
+    });
+  }
+
   Future<void> _refreshReviews() async {
     if (_isReviewsLoading) return;
     final ProductEntity? current = _product;
@@ -972,8 +1064,10 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
           AppBarAction.svg(
             label: '${_product?.totalFavourites ?? 0}',
             iconSize: 18,
-            onTap: () {},
-            svgAsset: 'assets/icons/favorite.svg',
+            onTap: _handleToggleFavourite,
+            svgAsset: _product?.isFavourite == true
+                ? 'assets/icons/favorite.svg'
+                : 'assets/icons/unfavorite.svg',
           ),
         ],
       ),
@@ -1311,9 +1405,16 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 _actionChip(
-                                  label: 'Favorite',
-                                  svgAsset: 'assets/icons/unfavorite.svg',
-                                  onTap: () {},
+                                  label: _product?.isFavourite == true
+                                      ? 'Favorited'
+                                      : 'Favorite',
+                                  svgAsset: _product?.isFavourite == true
+                                      ? 'assets/icons/favorite.svg'
+                                      : 'assets/icons/unfavorite.svg',
+                                  onTap: _isTogglingFavourite
+                                      ? null
+                                      : _handleToggleFavourite,
+                                  isLoading: _isTogglingFavourite,
                                 ),
                               ],
                             ),

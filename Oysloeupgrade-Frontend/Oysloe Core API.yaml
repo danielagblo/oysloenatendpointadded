@@ -1,0 +1,6920 @@
+openapi: 3.0.3
+info:
+  title: Oysloe Core API
+  version: 1.0.0
+  description: Oysloe marketplace API
+paths:
+  /api-v1/:
+    get:
+      operationId: ping
+      description: This method is used to check if the server is up and running
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingResponse'
+          description: ''
+  /api-v1/account-delete-requests/:
+    get:
+      operationId: api_v1_account_delete_requests_list
+      description: Users can submit account delete requests; admins can review/approve.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - APPROVED
+          - PENDING
+          - REJECTED
+        description: |-
+          * `PENDING` - Pending
+          * `APPROVED` - Approved
+          * `REJECTED` - Rejected
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountDeleteRequest'
+          description: ''
+    post:
+      operationId: api_v1_account_delete_requests_create
+      description: Users can submit account delete requests; admins can review/approve.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeleteRequest'
+          description: ''
+  /api-v1/account-delete-requests/{id}/:
+    get:
+      operationId: api_v1_account_delete_requests_retrieve
+      description: Users can submit account delete requests; admins can review/approve.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this account delete request.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeleteRequest'
+          description: ''
+    put:
+      operationId: api_v1_account_delete_requests_update
+      description: Users can submit account delete requests; admins can review/approve.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this account delete request.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeleteRequest'
+          description: ''
+    patch:
+      operationId: api_v1_account_delete_requests_partial_update
+      description: Users can submit account delete requests; admins can review/approve.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this account delete request.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountDeleteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountDeleteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAccountDeleteRequest'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeleteRequest'
+          description: ''
+    delete:
+      operationId: api_v1_account_delete_requests_destroy
+      description: Users can submit account delete requests; admins can review/approve.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this account delete request.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/account-delete-requests/{id}/approve/:
+    post:
+      operationId: api_v1_account_delete_requests_approve_create
+      description: Admin approves the delete request; optionally soft-deletes user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this account delete request.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeleteRequest'
+          description: ''
+  /api-v1/account-delete-requests/{id}/reject/:
+    post:
+      operationId: api_v1_account_delete_requests_reject_create
+      description: Admin rejects the delete request with an optional comment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this account delete request.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountDeleteRequest'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeleteRequest'
+          description: ''
+  /api-v1/admin/categories/:
+    get:
+      operationId: admin_list_categories
+      description: List all categories with nested subcategories (admin/staff only).
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminCategoryWithSubcategories'
+          description: ''
+  /api-v1/admin/users/:
+    get:
+      operationId: admin_list_users
+      description: List users (admin/staff only). Supports optional 'q' search across
+        name, email, phone.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search by name, email or phone
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+  /api-v1/admin/verify-user-id/:
+    post:
+      operationId: admin_verify_user_id
+      description: Admin-only endpoint to verify or unverify a user's ID card.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminVerifyId'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminVerifyId'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminVerifyId'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/admin/verifyuser/:
+    post:
+      operationId: admin_verify_user
+      description: Set admin verification status for a user by id. Staff-only.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminVerifyUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminVerifyUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminVerifyUser'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/adminlogin/:
+    post:
+      operationId: admin_login
+      description: Admin/Staff-only login endpoint (same as LoginAPI but enforces
+        staff/admin).
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/alerts/:
+    get:
+      operationId: api_v1_alerts_list
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alert'
+          description: ''
+    post:
+      operationId: api_v1_alerts_create
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Alert'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+  /api-v1/alerts/{id}/:
+    get:
+      operationId: api_v1_alerts_retrieve
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this alert.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+    put:
+      operationId: api_v1_alerts_update
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this alert.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Alert'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+    patch:
+      operationId: api_v1_alerts_partial_update
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this alert.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlert'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAlert'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAlert'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+    delete:
+      operationId: api_v1_alerts_destroy
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this alert.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/alerts/{id}/delete/:
+    delete:
+      operationId: api_v1_alerts_delete_destroy
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this alert.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/alerts/{id}/mark-read/:
+    post:
+      operationId: api_v1_alerts_mark_read_create
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this alert.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Alert'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+  /api-v1/alerts/mark-all-read/:
+    post:
+      operationId: api_v1_alerts_mark_all_read_create
+      description: Users can manage their in-app alerts; admins can manage all. When
+        creating an alert as an admin, you can specify the target user by setting
+        the 'user' field in the alert data.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Alert'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Alert'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+  /api-v1/categories/:
+    get:
+      operationId: api_v1_categories_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+    post:
+      operationId: api_v1_categories_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api-v1/categories/{id}/:
+    get:
+      operationId: api_v1_categories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    put:
+      operationId: api_v1_categories_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: api_v1_categories_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    delete:
+      operationId: api_v1_categories_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/changepassword/:
+    post:
+      operationId: change_password
+      description: Change user password
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleStatus'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/chatroomid/:
+    get:
+      operationId: get_chatroom_id
+      description: |-
+        Get the chatroom ID between the current user and
+        the other user if it exists, else create one
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatroomIdResponse'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatroomIdResponse'
+          description: ''
+  /api-v1/chatrooms/:
+    get:
+      operationId: api_v1_chatrooms_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatRoom'
+          description: ''
+  /api-v1/chatrooms/{id}/:
+    get:
+      operationId: api_v1_chatrooms_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this chat room.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoom'
+          description: ''
+  /api-v1/chatrooms/{id}/mark-read/:
+    post:
+      operationId: api_v1_chatrooms_mark_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this chat room.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRoom'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChatRoom'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChatRoom'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoom'
+          description: ''
+  /api-v1/chatrooms/{id}/messages/:
+    get:
+      operationId: api_v1_chatrooms_messages_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this chat room.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoom'
+          description: ''
+  /api-v1/chatrooms/{id}/send/:
+    post:
+      operationId: api_v1_chatrooms_send_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this chat room.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRoom'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChatRoom'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChatRoom'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoom'
+          description: ''
+  /api-v1/coupons/:
+    get:
+      operationId: api_v1_coupons_list
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+      - in: query
+        name: discount_type
+        schema:
+          type: string
+          enum:
+          - fixed
+          - percent
+        description: |-
+          * `percent` - Percent
+          * `fixed` - Fixed
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Coupon'
+          description: ''
+    post:
+      operationId: api_v1_coupons_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+          description: ''
+  /api-v1/coupons/{id}/:
+    get:
+      operationId: api_v1_coupons_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this coupon.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+          description: ''
+    put:
+      operationId: api_v1_coupons_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this coupon.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+          description: ''
+    patch:
+      operationId: api_v1_coupons_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this coupon.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCoupon'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCoupon'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCoupon'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+          description: ''
+    delete:
+      operationId: api_v1_coupons_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this coupon.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/coupons/{id}/expire/:
+    post:
+      operationId: api_v1_coupons_expire_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this coupon.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+          description: ''
+  /api-v1/coupons/{id}/redeem/:
+    post:
+      operationId: api_v1_coupons_redeem_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this coupon.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Coupon'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coupon'
+          description: ''
+  /api-v1/features/:
+    get:
+      operationId: api_v1_features_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: subcategory
+        schema:
+          type: integer
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Feature'
+          description: ''
+    post:
+      operationId: api_v1_features_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Feature'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Feature'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Feature'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feature'
+          description: ''
+  /api-v1/features/{id}/:
+    get:
+      operationId: api_v1_features_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feature.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feature'
+          description: ''
+    put:
+      operationId: api_v1_features_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feature.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Feature'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Feature'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Feature'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feature'
+          description: ''
+    patch:
+      operationId: api_v1_features_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feature.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFeature'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFeature'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFeature'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feature'
+          description: ''
+    delete:
+      operationId: api_v1_features_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feature.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/features/{id}/possible-values/:
+    get:
+      operationId: api_v1_features_possible_values_retrieve
+      description: |-
+        List, create or update possible values for this feature.
+
+        - GET: list all possible values for the feature.
+        - POST: create a new possible value for the feature.
+        - PATCH: update an existing possible value (requires ``id`` in body).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feature.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feature'
+          description: ''
+    post:
+      operationId: api_v1_features_possible_values_create
+      description: |-
+        List, create or update possible values for this feature.
+
+        - GET: list all possible values for the feature.
+        - POST: create a new possible value for the feature.
+        - PATCH: update an existing possible value (requires ``id`` in body).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feature.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Feature'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Feature'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Feature'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feature'
+          description: ''
+    patch:
+      operationId: api_v1_features_possible_values_partial_update
+      description: |-
+        List, create or update possible values for this feature.
+
+        - GET: list all possible values for the feature.
+        - POST: create a new possible value for the feature.
+        - PATCH: update an existing possible value (requires ``id`` in body).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feature.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFeature'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFeature'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFeature'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feature'
+          description: ''
+  /api-v1/feedback/:
+    get:
+      operationId: api_v1_feedback_list
+      description: Users can submit feedback; admins can browse all feedback.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Feedback'
+          description: ''
+    post:
+      operationId: api_v1_feedback_create
+      description: Users can submit feedback; admins can browse all feedback.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Feedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Feedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Feedback'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+  /api-v1/feedback/{id}/:
+    get:
+      operationId: api_v1_feedback_retrieve
+      description: Users can submit feedback; admins can browse all feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    put:
+      operationId: api_v1_feedback_update
+      description: Users can submit feedback; admins can browse all feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Feedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Feedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Feedback'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    patch:
+      operationId: api_v1_feedback_partial_update
+      description: Users can submit feedback; admins can browse all feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFeedback'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    delete:
+      operationId: api_v1_feedback_destroy
+      description: Users can submit feedback; admins can browse all feedback.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/job-applications/:
+    get:
+      operationId: job_application_list
+      description: List all job applications. Admin-only.
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobApplication'
+          description: ''
+    post:
+      operationId: job_application_create
+      description: Submit a job application. This endpoint is open to everyone.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobApplication'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/JobApplication'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/JobApplication'
+        required: true
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobApplication'
+          description: ''
+  /api-v1/locations/:
+    get:
+      operationId: api_v1_locations_list
+      parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: region
+        schema:
+          type: string
+          enum:
+          - Ahafo
+          - Ashanti
+          - Bono East
+          - Brong Ahafo
+          - Central
+          - Eastern
+          - Greater Accra
+          - North East
+          - Northern
+          - Oti
+          - Savannah
+          - Upper East
+          - Upper West
+          - Volta
+          - Western
+          - Western North
+        description: |-
+          * `Ahafo` - Ahafo
+          * `Ashanti` - Ashanti
+          * `Bono East` - Bono East
+          * `Brong Ahafo` - Brong Ahafo
+          * `Central` - Central
+          * `Eastern` - Eastern
+          * `Greater Accra` - Greater Accra
+          * `North East` - North East
+          * `Northern` - Northern
+          * `Oti` - Oti
+          * `Savannah` - Savannah
+          * `Upper East` - Upper East
+          * `Upper West` - Upper West
+          * `Volta` - Volta
+          * `Western` - Western
+          * `Western North` - Western North
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Location'
+          description: ''
+    post:
+      operationId: api_v1_locations_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Location'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Location'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Location'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+          description: ''
+  /api-v1/locations/{id}/:
+    get:
+      operationId: api_v1_locations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this location.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+          description: ''
+    put:
+      operationId: api_v1_locations_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this location.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Location'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Location'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Location'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+          description: ''
+    patch:
+      operationId: api_v1_locations_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this location.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLocation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLocation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLocation'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+          description: ''
+    delete:
+      operationId: api_v1_locations_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this location.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/login/:
+    post:
+      operationId: login
+      description: Login api endpoint
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/logout/:
+    post:
+      operationId: logout
+      description: Logout user by invalidating their Knox token(s).
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimpleStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SimpleStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SimpleStatus'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleStatus'
+          description: ''
+  /api-v1/messages/:
+    get:
+      operationId: api_v1_messages_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: room
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+          description: ''
+  /api-v1/messages/{id}/:
+    get:
+      operationId: api_v1_messages_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api-v1/otplogin/:
+    post:
+      operationId: otp_login
+      description: Login api endpoint using OTP
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPPostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPPostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPPostRequest'
+        required: true
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/payments/:
+    get:
+      operationId: api_v1_payments_list
+      description: |-
+        Read-only access to payment records.
+
+        This is mainly for admin dashboards and debugging; the actual Paystack
+        interaction (initiation/webhook) endpoints are implemented in the PaystackPaymentViewSet.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: provider
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FAILED
+          - PENDING
+          - SUCCESS
+        description: |-
+          * `PENDING` - Pending
+          * `SUCCESS` - Success
+          * `FAILED` - Failed
+      - in: query
+        name: subscription
+        schema:
+          type: integer
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+          description: ''
+  /api-v1/payments/{id}/:
+    get:
+      operationId: api_v1_payments_retrieve
+      description: |-
+        Read-only access to payment records.
+
+        This is mainly for admin dashboards and debugging; the actual Paystack
+        interaction (initiation/webhook) endpoints are implemented in the PaystackPaymentViewSet.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+  /api-v1/paystack/initiate/:
+    post:
+      operationId: api_v1_paystack_initiate_create
+      description: |-
+        Initiate a Paystack payment for a subscription.
+
+        Expects: {"subscription_id": <id>, "callback_url": "https://..."}
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          description: No response body
+  /api-v1/paystack/webhook/:
+    post:
+      operationId: api_v1_paystack_webhook_create
+      description: |-
+        Paystack webhook to confirm payments and create UserSubscriptions.
+
+        Configure Paystack to send webhooks to this endpoint.
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          description: No response body
+  /api-v1/possible-feature-values/:
+    get:
+      operationId: api_v1_possible_feature_values_list
+      description: |-
+        CRUD for possible values of a feature.
+
+        Typically managed by admins; can be read by clients to know the
+        allowed values for a given feature.
+      parameters:
+      - in: query
+        name: feature
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PosibleFeatureValue'
+          description: ''
+    post:
+      operationId: api_v1_possible_feature_values_create
+      description: |-
+        CRUD for possible values of a feature.
+
+        Typically managed by admins; can be read by clients to know the
+        allowed values for a given feature.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PosibleFeatureValue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PosibleFeatureValue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PosibleFeatureValue'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosibleFeatureValue'
+          description: ''
+  /api-v1/possible-feature-values/{id}/:
+    get:
+      operationId: api_v1_possible_feature_values_retrieve
+      description: |-
+        CRUD for possible values of a feature.
+
+        Typically managed by admins; can be read by clients to know the
+        allowed values for a given feature.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this posible feature value.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosibleFeatureValue'
+          description: ''
+    put:
+      operationId: api_v1_possible_feature_values_update
+      description: |-
+        CRUD for possible values of a feature.
+
+        Typically managed by admins; can be read by clients to know the
+        allowed values for a given feature.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this posible feature value.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PosibleFeatureValue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PosibleFeatureValue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PosibleFeatureValue'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosibleFeatureValue'
+          description: ''
+    patch:
+      operationId: api_v1_possible_feature_values_partial_update
+      description: |-
+        CRUD for possible values of a feature.
+
+        Typically managed by admins; can be read by clients to know the
+        allowed values for a given feature.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this posible feature value.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPosibleFeatureValue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPosibleFeatureValue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPosibleFeatureValue'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosibleFeatureValue'
+          description: ''
+    delete:
+      operationId: api_v1_possible_feature_values_destroy
+      description: |-
+        CRUD for possible values of a feature.
+
+        Typically managed by admins; can be read by clients to know the
+        allowed values for a given feature.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this posible feature value.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/privacy-policies/:
+    get:
+      operationId: api_v1_privacy_policies_list
+      description: Admin CRUD for privacy policies; public read access to latest version.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrivacyPolicy'
+          description: ''
+    post:
+      operationId: api_v1_privacy_policies_create
+      description: Admin CRUD for privacy policies; public read access to latest version.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyPolicy'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrivacyPolicy'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrivacyPolicy'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicy'
+          description: ''
+  /api-v1/privacy-policies/{id}/:
+    get:
+      operationId: api_v1_privacy_policies_retrieve
+      description: Admin CRUD for privacy policies; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this privacy policy.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicy'
+          description: ''
+    put:
+      operationId: api_v1_privacy_policies_update
+      description: Admin CRUD for privacy policies; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this privacy policy.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyPolicy'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrivacyPolicy'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrivacyPolicy'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicy'
+          description: ''
+    patch:
+      operationId: api_v1_privacy_policies_partial_update
+      description: Admin CRUD for privacy policies; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this privacy policy.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrivacyPolicy'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrivacyPolicy'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrivacyPolicy'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicy'
+          description: ''
+    delete:
+      operationId: api_v1_privacy_policies_destroy
+      description: Admin CRUD for privacy policies; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this privacy policy.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/privacy-policies/latest/:
+    get:
+      operationId: api_v1_privacy_policies_latest_retrieve
+      description: Admin CRUD for privacy policies; public read access to latest version.
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicy'
+          description: ''
+  /api-v1/product-features/:
+    get:
+      operationId: api_v1_product_features_list
+      parameters:
+      - in: query
+        name: feature
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: product
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductFeature'
+          description: ''
+    post:
+      operationId: api_v1_product_features_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductFeatureCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductFeatureCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductFeatureCreate'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductFeatureCreate'
+          description: ''
+  /api-v1/product-features/{id}/:
+    get:
+      operationId: api_v1_product_features_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product feature.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductFeature'
+          description: ''
+    put:
+      operationId: api_v1_product_features_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product feature.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductFeatureCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductFeatureCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductFeatureCreate'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductFeatureCreate'
+          description: ''
+    patch:
+      operationId: api_v1_product_features_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product feature.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductFeatureCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductFeatureCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductFeatureCreate'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductFeatureCreate'
+          description: ''
+    delete:
+      operationId: api_v1_product_features_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product feature.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/product-images/:
+    get:
+      operationId: api_v1_product_images_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: product
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductImage'
+          description: ''
+    post:
+      operationId: api_v1_product_images_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImage'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+  /api-v1/product-images/{id}/:
+    get:
+      operationId: api_v1_product_images_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product image.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+    put:
+      operationId: api_v1_product_images_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product image.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImage'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+    patch:
+      operationId: api_v1_product_images_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product image.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductImage'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+    delete:
+      operationId: api_v1_product_images_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product image.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/product-reports/:
+    get:
+      operationId: api_v1_product_reports_list
+      description: Read-only viewset for product reports. Admins can see all reports,
+        users only their own.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductReport'
+          description: ''
+  /api-v1/product-reports/{id}/:
+    get:
+      operationId: api_v1_product_reports_retrieve
+      description: Read-only viewset for product reports. Admins can see all reports,
+        users only their own.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product report.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductReport'
+          description: ''
+  /api-v1/products/:
+    get:
+      operationId: api_v1_products_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+          description: ''
+    post:
+      operationId: api_v1_products_create
+      description: Create a product only if user has an active subscription within
+        limits.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/{id}/:
+    get:
+      operationId: api_v1_products_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    put:
+      operationId: api_v1_products_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: api_v1_products_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    delete:
+      operationId: api_v1_products_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/products/{id}/confirm-mark-as-taken/:
+    post:
+      operationId: api_v1_products_confirm_mark_as_taken_create
+      description: |-
+        Confirmation endpoint that actually marks the product as taken.
+
+        Only the product owner is allowed to confirm. Once confirmed, the
+        product's ``is_taken`` flag is set to True.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/{id}/favourite/:
+    post:
+      operationId: api_v1_products_favourite_create
+      description: Toggle favourite status of a product for the current user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/{id}/like/:
+    post:
+      operationId: api_v1_products_like_create
+      description: Toggle like status of a product for the current user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/{id}/mark-as-taken/:
+    post:
+      operationId: api_v1_products_mark_as_taken_create
+      description: |-
+        Initiate mark-as-taken flow by notifying the owner.
+
+        This endpoint does NOT actually set ``is_taken``. It only creates
+        an in-app alert and sends an SMS to the owner so they can
+        confirm the change via the dedicated confirmation endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/{id}/report/:
+    post:
+      operationId: api_v1_products_report_create
+      description: Report a product/ad. Normal users can create reports; admins can
+        review via a separate viewset if needed.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/{id}/repost-ad/:
+    post:
+      operationId: api_v1_products_repost_ad_create
+      description: |-
+        Create a new product/ad by cloning a taken product.
+
+        - Only the owner of the product may repost it.
+        - The original product **must** have `is_taken=True`.
+        - Core fields, images and product features are duplicated; likes,
+          favourites and reports are not carried over.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/{id}/set-status/:
+    put:
+      operationId: api_v1_products_set_status_update
+      description: Set the product (ad) status. Staff-only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/favourites/:
+    get:
+      operationId: api_v1_products_favourites_retrieve
+      description: Return list of the current user's favourite products.
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/products/related/:
+    get:
+      operationId: api_v1_products_related_retrieve
+      description: |-
+        Return products related to a given product.
+
+        Expects a ``product_id`` query parameter for the *source* product.
+        Uses that product's category, subcategory, features and name to
+        find similar ACTIVE products.
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api-v1/redeem-points/:
+    post:
+      operationId: redeem_referral_points
+      description: Redeem referral points in blocks of 2,500 => Ghc 500 per block.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedeemReferralResponse'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RedeemReferralResponse'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RedeemReferralResponse'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedeemReferralResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/register/:
+    post:
+      operationId: register
+      description: Register User api endpoint
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterUser'
+        required: true
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterUserResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/resetpassword/:
+    post:
+      operationId: reset_password
+      description: Reset user password
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleStatus'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/reviews/:
+    get:
+      operationId: api_v1_reviews_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: product
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: integer
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+          description: ''
+    post:
+      operationId: api_v1_reviews_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateReview'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+  /api-v1/reviews/{id}/:
+    get:
+      operationId: api_v1_reviews_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    put:
+      operationId: api_v1_reviews_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Review'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Review'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    patch:
+      operationId: api_v1_reviews_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReview'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    delete:
+      operationId: api_v1_reviews_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/reviews/{id}/like/:
+    post:
+      operationId: api_v1_reviews_like_create
+      description: Toggle like on a review for the authenticated user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Review'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Review'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+  /api-v1/subcategories/:
+    get:
+      operationId: api_v1_subcategories_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubCategory'
+          description: ''
+    post:
+      operationId: api_v1_subcategories_create
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubCategory'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubCategory'
+          description: ''
+  /api-v1/subcategories/{id}/:
+    get:
+      operationId: api_v1_subcategories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this sub category.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubCategory'
+          description: ''
+    put:
+      operationId: api_v1_subcategories_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this sub category.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubCategory'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubCategory'
+          description: ''
+    patch:
+      operationId: api_v1_subcategories_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this sub category.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSubCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSubCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSubCategory'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubCategory'
+          description: ''
+    delete:
+      operationId: api_v1_subcategories_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this sub category.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/subscriptions/:
+    get:
+      operationId: api_v1_subscriptions_list
+      description: |-
+        CRUD for subscription packages.
+
+        Admins can create/update/delete; all users (including anonymous) can list/retrieve
+        so they can see available plans to subscribe to.
+      parameters:
+      - in: query
+        name: duration_days
+        schema:
+          type: integer
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: max_products
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: price
+        schema:
+          type: number
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: tier
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscription'
+          description: ''
+    post:
+      operationId: api_v1_subscriptions_create
+      description: |-
+        CRUD for subscription packages.
+
+        Admins can create/update/delete; all users (including anonymous) can list/retrieve
+        so they can see available plans to subscribe to.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+  /api-v1/subscriptions/{id}/:
+    get:
+      operationId: api_v1_subscriptions_retrieve
+      description: |-
+        CRUD for subscription packages.
+
+        Admins can create/update/delete; all users (including anonymous) can list/retrieve
+        so they can see available plans to subscribe to.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this subscription.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+    put:
+      operationId: api_v1_subscriptions_update
+      description: |-
+        CRUD for subscription packages.
+
+        Admins can create/update/delete; all users (including anonymous) can list/retrieve
+        so they can see available plans to subscribe to.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this subscription.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+    patch:
+      operationId: api_v1_subscriptions_partial_update
+      description: |-
+        CRUD for subscription packages.
+
+        Admins can create/update/delete; all users (including anonymous) can list/retrieve
+        so they can see available plans to subscribe to.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this subscription.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscription'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+    delete:
+      operationId: api_v1_subscriptions_destroy
+      description: |-
+        CRUD for subscription packages.
+
+        Admins can create/update/delete; all users (including anonymous) can list/retrieve
+        so they can see available plans to subscribe to.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this subscription.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/terms-and-conditions/:
+    get:
+      operationId: api_v1_terms_and_conditions_list
+      description: Admin CRUD for T&C; public read access to latest version.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TermsAndConditions'
+          description: ''
+    post:
+      operationId: api_v1_terms_and_conditions_create
+      description: Admin CRUD for T&C; public read access to latest version.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermsAndConditions'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TermsAndConditions'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TermsAndConditions'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermsAndConditions'
+          description: ''
+  /api-v1/terms-and-conditions/{id}/:
+    get:
+      operationId: api_v1_terms_and_conditions_retrieve
+      description: Admin CRUD for T&C; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this terms and conditions.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermsAndConditions'
+          description: ''
+    put:
+      operationId: api_v1_terms_and_conditions_update
+      description: Admin CRUD for T&C; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this terms and conditions.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermsAndConditions'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TermsAndConditions'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TermsAndConditions'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermsAndConditions'
+          description: ''
+    patch:
+      operationId: api_v1_terms_and_conditions_partial_update
+      description: Admin CRUD for T&C; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this terms and conditions.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTermsAndConditions'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTermsAndConditions'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTermsAndConditions'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermsAndConditions'
+          description: ''
+    delete:
+      operationId: api_v1_terms_and_conditions_destroy
+      description: Admin CRUD for T&C; public read access to latest version.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this terms and conditions.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/terms-and-conditions/latest/:
+    get:
+      operationId: api_v1_terms_and_conditions_latest_retrieve
+      description: Admin CRUD for T&C; public read access to latest version.
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermsAndConditions'
+          description: ''
+  /api-v1/user-subscriptions/:
+    get:
+      operationId: api_v1_user_subscriptions_list
+      description: Users can subscribe to packages and view their subscriptions.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSubscription'
+          description: ''
+    post:
+      operationId: api_v1_user_subscriptions_create
+      description: Users can subscribe to packages and view their subscriptions.
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserSubscription'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscription'
+          description: ''
+  /api-v1/user-subscriptions/{id}/:
+    get:
+      operationId: api_v1_user_subscriptions_retrieve
+      description: Users can subscribe to packages and view their subscriptions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user subscription.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscription'
+          description: ''
+    put:
+      operationId: api_v1_user_subscriptions_update
+      description: Users can subscribe to packages and view their subscriptions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user subscription.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserSubscription'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscription'
+          description: ''
+    patch:
+      operationId: api_v1_user_subscriptions_partial_update
+      description: Users can subscribe to packages and view their subscriptions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user subscription.
+        required: true
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserSubscription'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscription'
+          description: ''
+    delete:
+      operationId: api_v1_user_subscriptions_destroy
+      description: Users can subscribe to packages and view their subscriptions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user subscription.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /api-v1/userpreferences/:
+    get:
+      operationId: user_preferences_get
+      description: Get user preferences for the logged in user
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: user_preferences_put
+      description: Update user preferences for the logged in user
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/userprofile/:
+    get:
+      operationId: user_profile_get
+      description: Get user profile for the logged in user
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    post:
+      operationId: user_profile_post
+      description: Use this to disable/enable a user account. To be used by admins
+        only
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminToggleUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminToggleUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminToggleUser'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+    put:
+      operationId: user_profile_put
+      description: Update user profile for the logged in user
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+    patch:
+      operationId: user_profile_patch
+      description: Partially update user profile for the logged in user
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdate'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+    delete:
+      operationId: user_profile_delete
+      description: Delete user account. To be used by admins only
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /api-v1/verifyotp/:
+    get:
+      operationId: verify_otp_get
+      description: Use this endpoint to send OTP to the user
+      parameters:
+      - in: query
+        name: phone
+        schema:
+          type: string
+        description: Phone number to which the OTP will be sent.
+        required: true
+      tags:
+      - api-v1
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+    post:
+      operationId: verify_otp_post
+      description: Verify OTP api endpoint
+      tags:
+      - api-v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPPostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPPostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPPostRequest'
+        required: true
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+          description: ''
+  /notifications/devices/:
+    get:
+      operationId: notifications_devices_list
+      description: Manage FCM device tokens for the authenticated user. POST is idempotent
+        per-token.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - notifications
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    post:
+      operationId: notifications_devices_create
+      description: Manage FCM device tokens for the authenticated user. POST is idempotent
+        per-token.
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+  /notifications/devices/{id}/:
+    get:
+      operationId: notifications_devices_retrieve
+      description: Manage FCM device tokens for the authenticated user. POST is idempotent
+        per-token.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - notifications
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    put:
+      operationId: notifications_devices_update
+      description: Manage FCM device tokens for the authenticated user. POST is idempotent
+        per-token.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+        required: true
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    patch:
+      operationId: notifications_devices_partial_update
+      description: Manage FCM device tokens for the authenticated user. POST is idempotent
+        per-token.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFCMDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFCMDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFCMDevice'
+      security:
+      - knoxApiToken: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    delete:
+      operationId: notifications_devices_destroy
+      description: Manage FCM device tokens for the authenticated user. POST is idempotent
+        per-token.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - notifications
+      security:
+      - knoxApiToken: []
+      responses:
+        '204':
+          description: No response body
+  /notifications/save-fcm-token/:
+    post:
+      operationId: notifications_save_fcm_token_create
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveFCMTokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SaveFCMTokenRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaveFCMTokenRequest'
+        required: true
+      security:
+      - knoxApiToken: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveFCMTokenResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveFCMTokenResponse'
+          description: ''
+components:
+  schemas:
+    AccountDeleteRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reason:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AccountDeleteRequestStatusEnum'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        admin_comment:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - admin_comment
+      - created_at
+      - id
+      - processed_at
+      - reason
+      - status
+      - user
+    AccountDeleteRequestStatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+    AdminCategoryWithSubcategories:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        subcategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubCategory'
+          readOnly: true
+      required:
+      - id
+      - name
+      - subcategories
+    AdminToggleUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        is_active:
+          type: boolean
+      required:
+      - id
+      - is_active
+    AdminVerifyId:
+      type: object
+      description: Serializer used by admins to toggle a user's ID verification flag.
+      properties:
+        id:
+          type: integer
+        id_verified:
+          type: boolean
+      required:
+      - id
+      - id_verified
+    AdminVerifyUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        admin_verified:
+          type: boolean
+          default: true
+      required:
+      - id
+    Alert:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          writeOnly: true
+        title:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+        kind:
+          type: string
+          description: Type of alert, e.g., ACCOUNT_CREATED, ACCOUNT_APPROVED, PRODUCT_APPROVED
+          maxLength: 50
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - title
+      - user
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+      required:
+      - created_at
+      - id
+      - name
+      - updated_at
+    ChangePassword:
+      type: object
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+        confirm_password:
+          type: string
+      required:
+      - confirm_password
+      - new_password
+      - old_password
+    ChatRoom:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        room_id:
+          type: string
+          maxLength: 200
+        name:
+          type: string
+          maxLength: 100
+        is_group:
+          type: boolean
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        total_unread:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - members
+      - messages
+      - name
+      - room_id
+      - total_unread
+    ChatroomIdResponse:
+      type: object
+      properties:
+        chatroom_id:
+          type: string
+      required:
+      - chatroom_id
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        discount_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        max_uses:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Total times this coupon can be used across all users
+        uses:
+          type: integer
+          readOnly: true
+        per_user_limit:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Max uses allowed per user
+        valid_from:
+          type: string
+          format: date-time
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        remaining_uses:
+          type: integer
+          nullable: true
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - discount_type
+      - discount_value
+      - id
+      - remaining_uses
+      - updated_at
+      - uses
+    CreateReview:
+      type: object
+      properties:
+        product:
+          type: integer
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        comment:
+          type: string
+          nullable: true
+      required:
+      - product
+      - rating
+    DiscountTypeEnum:
+      enum:
+      - percent
+      - fixed
+      type: string
+      description: |-
+        * `percent` - Percent
+        * `fixed` - Fixed
+    FCMDevice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        token:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - token
+      - user
+    Feature:
+      type: object
+      description: Serializer for features, optionally including their possible values.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosibleFeatureValue'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        subcategory:
+          type: integer
+      required:
+      - created_at
+      - description
+      - id
+      - name
+      - subcategory
+      - updated_at
+      - values
+    Feedback:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - message
+      - rating
+      - user
+    GenericMessage:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    JobApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        application_id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 20
+        location:
+          type: string
+          maxLength: 100
+        gender:
+          type: string
+          maxLength: 20
+        dob:
+          type: string
+          format: date
+        resume:
+          type: string
+          format: uri
+        cover_letter:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - application_id
+      - created_at
+      - dob
+      - email
+      - gender
+      - id
+      - location
+      - name
+      - phone
+      - resume
+      - updated_at
+    LevelEnum:
+      enum:
+      - SILVER
+      - GOLD
+      - DIAMOND
+      type: string
+      description: |-
+        * `SILVER` - SILVER
+        * `GOLD` - GOLD
+        * `DIAMOND` - DIAMOND
+    Location:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        region:
+          $ref: '#/components/schemas/RegionEnum'
+        name:
+          type: string
+          maxLength: 150
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - updated_at
+    Login:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+      - email
+      - password
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+      required:
+      - token
+      - user
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        room:
+          type: integer
+        sender:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_read:
+          type: boolean
+      required:
+      - content
+      - created_at
+      - id
+      - room
+      - sender
+    PatchedAccountDeleteRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reason:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AccountDeleteRequestStatusEnum'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        admin_comment:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+    PatchedAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          writeOnly: true
+        title:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+        kind:
+          type: string
+          description: Type of alert, e.g., ACCOUNT_CREATED, ACCOUNT_APPROVED, PRODUCT_APPROVED
+          maxLength: 50
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+    PatchedCoupon:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        discount_type:
+          $ref: '#/components/schemas/DiscountTypeEnum'
+        discount_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        max_uses:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Total times this coupon can be used across all users
+        uses:
+          type: integer
+          readOnly: true
+        per_user_limit:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Max uses allowed per user
+        valid_from:
+          type: string
+          format: date-time
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        remaining_uses:
+          type: integer
+          nullable: true
+          readOnly: true
+    PatchedFCMDevice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        token:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedFeature:
+      type: object
+      description: Serializer for features, optionally including their possible values.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosibleFeatureValue'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        subcategory:
+          type: integer
+    PatchedFeedback:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedLocation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        region:
+          $ref: '#/components/schemas/RegionEnum'
+        name:
+          type: string
+          maxLength: 150
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPosibleFeatureValue:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        feature:
+          type: integer
+        value:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPrivacyPolicy:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        date:
+          type: string
+          format: date
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        product_features:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductFeature'
+          readOnly: true
+        location:
+          allOf:
+          - $ref: '#/components/schemas/ProductLocation'
+          readOnly: true
+        location_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/ProductOwner'
+          readOnly: true
+        favourited_by_user:
+          type: boolean
+          readOnly: true
+        multiplier:
+          type: number
+          format: double
+          readOnly: true
+        liked_by_user:
+          type: boolean
+          readOnly: true
+        total_likes:
+          type: integer
+          readOnly: true
+        total_favourites:
+          type: integer
+          readOnly: true
+        total_reviews:
+          type: integer
+          readOnly: true
+        average_rating:
+          type: string
+          nullable: true
+          readOnly: true
+        total_reports:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        pid:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 100
+        image:
+          type: string
+          format: uri
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        status:
+          $ref: '#/components/schemas/ProductStatusEnum'
+        is_taken:
+          type: boolean
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        duration:
+          type: string
+          maxLength: 100
+        suspension_note:
+          type: string
+          nullable: true
+          description: Reason provided when this product is suspended by an admin.
+        category:
+          type: integer
+          nullable: true
+    PatchedProductFeatureCreate:
+      type: object
+      description: |-
+        Write serializer for creating/updating product features.
+
+        Validates that the provided value is one of the possible values
+        defined for the selected feature.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+        feature:
+          type: integer
+        value:
+          type: string
+          maxLength: 255
+    PatchedProductImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+        image:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedReview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/Product'
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        comment:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        likes_count:
+          type: integer
+          readOnly: true
+    PatchedSubCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        category:
+          type: integer
+    PatchedSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        tier:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        original_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        multiplier:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          description: Just a tag to be used for differentiating plans
+        discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          description: Percentage discount on the original price if any
+        effective_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        features:
+          type: string
+          description: Comma-separated list of features included in this subscription
+        features_list:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        duration_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          description: Duration of the subscription in days
+        max_products:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          description: Maximum number of products allowed under this subscription.
+            Use 0 for unlimited.
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedTermsAndConditions:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        date:
+          type: string
+          format: date
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        subscription:
+          allOf:
+          - $ref: '#/components/schemas/Subscription'
+          readOnly: true
+        subscription_id:
+          type: integer
+          writeOnly: true
+        payment:
+          allOf:
+          - $ref: '#/components/schemas/Payment'
+          readOnly: true
+        start_date:
+          type: string
+          format: date-time
+          readOnly: true
+        end_date:
+          type: string
+          format: date-time
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 50
+        phone:
+          type: string
+          maxLength: 15
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        preferred_notification_email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 50
+        preferred_notification_phone:
+          type: string
+          nullable: true
+          maxLength: 15
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        subscription:
+          type: integer
+          nullable: true
+          description: Subscription this payment is intended for (if applicable).
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        currency:
+          type: string
+          maxLength: 10
+        provider:
+          type: string
+          maxLength: 30
+        reference:
+          type: string
+          maxLength: 100
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        channel:
+          type: string
+          readOnly: true
+          nullable: true
+        raw_response:
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - channel
+      - created_at
+      - id
+      - raw_response
+      - reference
+      - status
+      - updated_at
+      - user
+    PaymentStatusEnum:
+      enum:
+      - PENDING
+      - SUCCESS
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `SUCCESS` - Success
+        * `FAILED` - Failed
+    PingResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    PosibleFeatureValue:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        feature:
+          type: integer
+        value:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - feature
+      - id
+      - updated_at
+      - value
+    PrivacyPolicy:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        date:
+          type: string
+          format: date
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - date
+      - id
+      - updated_at
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        product_features:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductFeature'
+          readOnly: true
+        location:
+          allOf:
+          - $ref: '#/components/schemas/ProductLocation'
+          readOnly: true
+        location_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/ProductOwner'
+          readOnly: true
+        favourited_by_user:
+          type: boolean
+          readOnly: true
+        multiplier:
+          type: number
+          format: double
+          readOnly: true
+        liked_by_user:
+          type: boolean
+          readOnly: true
+        total_likes:
+          type: integer
+          readOnly: true
+        total_favourites:
+          type: integer
+          readOnly: true
+        total_reviews:
+          type: integer
+          readOnly: true
+        average_rating:
+          type: string
+          nullable: true
+          readOnly: true
+        total_reports:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        pid:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 100
+        image:
+          type: string
+          format: uri
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        status:
+          $ref: '#/components/schemas/ProductStatusEnum'
+        is_taken:
+          type: boolean
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        duration:
+          type: string
+          maxLength: 100
+        suspension_note:
+          type: string
+          nullable: true
+          description: Reason provided when this product is suspended by an admin.
+        category:
+          type: integer
+          nullable: true
+      required:
+      - average_rating
+      - created_at
+      - description
+      - favourited_by_user
+      - id
+      - images
+      - liked_by_user
+      - location
+      - multiplier
+      - name
+      - owner
+      - price
+      - product_features
+      - total_favourites
+      - total_likes
+      - total_reports
+      - total_reviews
+      - updated_at
+    ProductFeature:
+      type: object
+      description: Read serializer for product features, expanding the feature details.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+        feature:
+          allOf:
+          - $ref: '#/components/schemas/Feature'
+          readOnly: true
+        value:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - feature
+      - id
+      - product
+      - updated_at
+      - value
+    ProductFeatureCreate:
+      type: object
+      description: |-
+        Write serializer for creating/updating product features.
+
+        Validates that the provided value is one of the possible values
+        defined for the selected feature.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+        feature:
+          type: integer
+        value:
+          type: string
+          maxLength: 255
+      required:
+      - feature
+      - id
+      - product
+      - value
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+        image:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - image
+      - product
+    ProductLocation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        region:
+          $ref: '#/components/schemas/RegionEnum'
+        name:
+          type: string
+          maxLength: 150
+      required:
+      - id
+      - name
+    ProductOwner:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        second_number:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        admin_verified:
+          type: boolean
+          readOnly: true
+        id_verified:
+          type: boolean
+          readOnly: true
+        level:
+          allOf:
+          - $ref: '#/components/schemas/LevelEnum'
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        business_logo:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        business_name:
+          type: string
+          readOnly: true
+      required:
+      - admin_verified
+      - avatar
+      - business_logo
+      - business_name
+      - email
+      - id
+      - id_verified
+      - level
+      - name
+      - phone
+      - second_number
+    ProductReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/Product'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        reason:
+          $ref: '#/components/schemas/ReasonEnum'
+        message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - product
+      - updated_at
+      - user
+    ProductStatusEnum:
+      enum:
+      - ACTIVE
+      - SUSPENDED
+      - DRAFT
+      - PENDING
+      - REJECTED
+      type: string
+      description: |-
+        * `ACTIVE` - ACTIVE
+        * `SUSPENDED` - SUSPENDED
+        * `DRAFT` - DRAFT
+        * `PENDING` - PENDING
+        * `REJECTED` - REJECTED
+    ReasonEnum:
+      enum:
+      - SPAM
+      - INAPPROPRIATE
+      - SCAM
+      - OTHER
+      type: string
+      description: |-
+        * `SPAM` - Spam or misleading
+        * `INAPPROPRIATE` - Inappropriate content
+        * `SCAM` - Scam or fraud
+        * `OTHER` - Other
+    RedeemReferralResponse:
+      type: object
+      properties:
+        redeemed_points:
+          type: integer
+        cash_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        remaining_points:
+          type: integer
+        wallet_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - cash_amount
+      - redeemed_points
+      - remaining_points
+      - wallet_balance
+    RegionEnum:
+      enum:
+      - Ahafo
+      - Ashanti
+      - Bono East
+      - Brong Ahafo
+      - Central
+      - Eastern
+      - Greater Accra
+      - North East
+      - Northern
+      - Oti
+      - Savannah
+      - Upper East
+      - Upper West
+      - Volta
+      - Western
+      - Western North
+      type: string
+      description: |-
+        * `Ahafo` - Ahafo
+        * `Ashanti` - Ashanti
+        * `Bono East` - Bono East
+        * `Brong Ahafo` - Brong Ahafo
+        * `Central` - Central
+        * `Eastern` - Eastern
+        * `Greater Accra` - Greater Accra
+        * `North East` - North East
+        * `Northern` - Northern
+        * `Oti` - Oti
+        * `Savannah` - Savannah
+        * `Upper East` - Upper East
+        * `Upper West` - Upper West
+        * `Volta` - Volta
+        * `Western` - Western
+        * `Western North` - Western North
+    RegisterUser:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 50
+        phone:
+          type: string
+          maxLength: 15
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+        referral_code:
+          type: string
+      required:
+      - email
+      - name
+      - password
+      - phone
+    RegisterUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+      required:
+      - token
+      - user
+    ResetPassword:
+      type: object
+      properties:
+        phone:
+          type: string
+        new_password:
+          type: string
+        confirm_password:
+          type: string
+      required:
+      - confirm_password
+      - new_password
+      - phone
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/Product'
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        comment:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        likes_count:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - likes_count
+      - product
+      - rating
+      - user
+    SaveFCMTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        user_id:
+          type: integer
+      required:
+      - token
+      - user_id
+    SaveFCMTokenResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+    SimpleStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+      required:
+      - status
+    SubCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        category:
+          type: integer
+      required:
+      - category
+      - created_at
+      - id
+      - name
+      - updated_at
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        tier:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        original_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        multiplier:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          description: Just a tag to be used for differentiating plans
+        discount_percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          description: Percentage discount on the original price if any
+        effective_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        features:
+          type: string
+          description: Comma-separated list of features included in this subscription
+        features_list:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        duration_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          description: Duration of the subscription in days
+        max_products:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          description: Maximum number of products allowed under this subscription.
+            Use 0 for unlimited.
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - duration_days
+      - effective_price
+      - features
+      - features_list
+      - id
+      - max_products
+      - name
+      - price
+      - tier
+      - updated_at
+    TermsAndConditions:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        date:
+          type: string
+          format: date
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - date
+      - id
+      - updated_at
+    TypeEnum:
+      enum:
+      - SALE
+      - PAYLATER
+      - RENT
+      type: string
+      description: |-
+        * `SALE` - SALE
+        * `PAYLATER` - PAYLATER
+        * `RENT` - RENT
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        active_ads:
+          type: integer
+          readOnly: true
+        taken_ads:
+          type: integer
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 50
+        phone:
+          type: string
+          maxLength: 15
+        name:
+          type: string
+          maxLength: 255
+        business_name:
+          type: string
+          maxLength: 255
+        id_number:
+          type: string
+          maxLength: 50
+        second_number:
+          type: string
+          maxLength: 15
+        business_logo:
+          type: string
+          format: uri
+          nullable: true
+        id_front_page:
+          type: string
+          format: uri
+          nullable: true
+        id_back_page:
+          type: string
+          format: uri
+          nullable: true
+        account_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        account_name:
+          type: string
+          nullable: true
+          maxLength: 100
+        mobile_network:
+          type: string
+          nullable: true
+          maxLength: 50
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        admin_verified:
+          type: boolean
+        id_verified:
+          type: boolean
+        deleted:
+          type: boolean
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        referral_points:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        referral_code:
+          type: string
+          maxLength: 20
+        is_active:
+          type: boolean
+        is_staff:
+          type: boolean
+        is_superuser:
+          type: boolean
+        created_from_app:
+          type: boolean
+        phone_verified:
+          type: boolean
+        email_verified:
+          type: boolean
+        preferred_notification_email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 50
+        preferred_notification_phone:
+          type: string
+          nullable: true
+          maxLength: 15
+      required:
+      - active_ads
+      - created_at
+      - email
+      - id
+      - name
+      - phone
+      - taken_ads
+      - updated_at
+    UserSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        subscription:
+          allOf:
+          - $ref: '#/components/schemas/Subscription'
+          readOnly: true
+        subscription_id:
+          type: integer
+          writeOnly: true
+        payment:
+          allOf:
+          - $ref: '#/components/schemas/Payment'
+          readOnly: true
+        start_date:
+          type: string
+          format: date-time
+          readOnly: true
+        end_date:
+          type: string
+          format: date-time
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - end_date
+      - id
+      - is_active
+      - payment
+      - start_date
+      - subscription
+      - subscription_id
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 50
+        phone:
+          type: string
+          maxLength: 15
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        preferred_notification_email:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 50
+        preferred_notification_phone:
+          type: string
+          nullable: true
+          maxLength: 15
+    VerifyOTPPostRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          maxLength: 10
+        otp:
+          type: string
+      required:
+      - otp
+      - phone
+  securitySchemes:
+    knoxApiToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

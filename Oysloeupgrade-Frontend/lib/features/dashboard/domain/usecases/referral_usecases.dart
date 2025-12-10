@@ -51,3 +51,4 @@ class RedeemCouponUseCase extends UseCase<void, RedeemCouponParams> {
   }
 }
 
+

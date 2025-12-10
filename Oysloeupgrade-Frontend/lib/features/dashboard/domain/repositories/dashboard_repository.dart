@@ -4,12 +4,15 @@ import '../../../../core/errors/failure.dart';
 import '../entities/product_entity.dart';
 import '../entities/review_entity.dart';
 import '../entities/category_entity.dart';
+import '../entities/subcategory_entity.dart';
+import '../entities/feature_entity.dart';
+import '../entities/location_entity.dart';
 import '../entities/alert_entity.dart';
 import '../entities/account_delete_request_entity.dart';
 import '../entities/chat_room_entity.dart';
 import '../entities/chat_message_entity.dart';
-import '../entities/account_delete_request_entity.dart';
 import '../entities/referral_entity.dart';
+import '../entities/static_page_entity.dart';
 
 abstract class DashboardRepository {
   Future<Either<Failure, List<ProductEntity>>> getProducts({
@@ -43,6 +46,12 @@ abstract class DashboardRepository {
     required String reason,
   });
 
+  Future<Either<Failure, ProductEntity>> toggleFavourite({
+    required int productId,
+  });
+
+  Future<Either<Failure, List<ProductEntity>>> getFavourites();
+
   Future<Either<Failure, void>> submitFeedback({
     required int rating,
     String? comment,
@@ -67,6 +76,16 @@ abstract class DashboardRepository {
   Future<Either<Failure, List<CategoryEntity>>> getCategories({
     bool forceRefresh = false,
   });
+
+  Future<Either<Failure, List<SubcategoryEntity>>> getSubcategories({
+    int? categoryId,
+  });
+
+  Future<Either<Failure, List<FeatureEntity>>> getFeatures({
+    int? subcategoryId,
+  });
+
+  Future<Either<Failure, List<LocationEntity>>> getLocations();
 
   Future<Either<Failure, List<AlertEntity>>> getAlerts();
 
@@ -94,7 +113,8 @@ abstract class DashboardRepository {
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>
       getAccountDeleteRequests();
 
-  Future<Either<Failure, AccountDeleteRequestEntity>> createAccountDeleteRequest({
+  Future<Either<Failure, AccountDeleteRequestEntity>>
+      createAccountDeleteRequest({
     String? reason,
   });
 
@@ -155,4 +175,8 @@ abstract class DashboardRepository {
   Future<Either<Failure, void>> redeemCoupon({
     required String code,
   });
+
+  /// Static pages
+  Future<Either<Failure, StaticPageEntity>> getPrivacyPolicy();
+  Future<Either<Failure, StaticPageEntity>> getTermsConditions();
 }

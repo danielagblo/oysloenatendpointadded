@@ -56,3 +56,4 @@ class PointsTransactionEntity extends Equatable {
   List<Object?> get props => [id, date, points, amount, description];
 }
 
+

@@ -18,6 +18,7 @@ class AppStrings {
   static const String categoriesURL = '$apiBasePath/categories/';
   static const String subcategoriesURL = '$apiBasePath/subcategories/';
   static const String featuresURL = '$apiBasePath/features/';
+  static const String featureValuesURL = '$apiBasePath/feature-values/';
   static const String productFeaturesURL = '$apiBasePath/product-features/';
   static const String productImagesURL = '$apiBasePath/product-images/';
   static const String relatedProductsURL = '$apiBasePath/products/related/';
@@ -28,6 +29,9 @@ class AppStrings {
       '$apiBasePath/products/$id/set-status/';
   static String productReportURL(String id) =>
       '$apiBasePath/products/$id/report/';
+  static String productFavouriteURL(String id) =>
+      '$apiBasePath/products/$id/favourite/';
+  static const String favouritesURL = '$apiBasePath/products/favourites/';
 
   // Reviews
   static const String reviewsURL = '$apiBasePath/reviews/';
@@ -62,8 +66,7 @@ class AppStrings {
   // Chat
   static const String chatRoomIdURL = '$apiBasePath/chatroomid/';
   static const String chatRoomsURL = '$apiBasePath/chatrooms/';
-  static String chatRoomDetailURL(String id) =>
-      '$apiBasePath/chatrooms/$id/';
+  static String chatRoomDetailURL(String id) => '$apiBasePath/chatrooms/$id/';
   static String chatRoomMarkReadURL(String id) =>
       '$apiBasePath/chatrooms/$id/mark-read/';
   static String chatRoomMessagesURL(String id) =>
@@ -76,7 +79,22 @@ class AppStrings {
 
   // Referral & Points
   static const String referralURL = '$apiBasePath/referrals/';
-  static const String referralTransactionsURL = '$apiBasePath/referrals/transactions/';
+  static const String referralTransactionsURL =
+      '$apiBasePath/referrals/transactions/';
   static const String redeemCouponURL = '$apiBasePath/referrals/redeem/';
+
+  // Static pages
+  static const String privacyPoliciesLatestURL =
+      '$apiBasePath/privacy-policies/latest/';
+  static const String privacyPoliciesURL = '$apiBasePath/privacy-policies/';
+  static const String termsConditionsURL = '$apiBasePath/terms-conditions/';
+  static const String termsConditionsLatestURL =
+      '$apiBasePath/terms-and-conditions/latest/';
+  static const String termsConditionsListURL =
+      '$apiBasePath/terms-and-conditions/';
+
+  // Locations
+  static const String locationsURL = '$apiBasePath/locations/';
+
   // TODO: add the remaining endpoints from the schema as they are implemented.
 }

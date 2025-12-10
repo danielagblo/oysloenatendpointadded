@@ -1,7 +1,7 @@
 
 # Oysloeupgrade-Frontend
 
-Mobile upgrade for Oysloe Company LTD
+Mobile upgrade for Bricsky Software Company
 
 ## Getting Started
 

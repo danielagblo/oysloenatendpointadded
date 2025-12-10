@@ -105,6 +105,15 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<CategoriesRemoteDataSource>(
       () => CategoriesRemoteDataSourceImpl(client: sl()),
     )
+    ..registerLazySingleton<SubcategoriesRemoteDataSource>(
+      () => SubcategoriesRemoteDataSourceImpl(client: sl()),
+    )
+    ..registerLazySingleton<FeaturesRemoteDataSource>(
+      () => FeaturesRemoteDataSourceImpl(client: sl()),
+    )
+    ..registerLazySingleton<LocationsRemoteDataSource>(
+      () => LocationsRemoteDataSourceImpl(client: sl()),
+    )
     ..registerLazySingleton<CategoriesLocalDataSource>(
       () => CategoriesLocalDataSourceImpl(
         box: sl(instanceName: 'categories_box'),
@@ -122,6 +131,9 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<ChatRemoteDataSource>(
       () => ChatRemoteDataSourceImpl(client: sl()),
     )
+    ..registerLazySingleton<StaticPagesRemoteDataSource>(
+      () => StaticPagesRemoteDataSourceImpl(client: sl()),
+    )
     ..registerLazySingleton<ReferralRemoteDataSource>(
       () => ReferralRemoteDataSourceImpl(client: sl()),
     )
@@ -129,11 +141,15 @@ Future<void> _initDashboard() async {
       () => DashboardRepositoryImpl(
         remoteDataSource: sl(),
         categoriesRemoteDataSource: sl(),
+        subcategoriesRemoteDataSource: sl(),
+        featuresRemoteDataSource: sl(),
+        locationsRemoteDataSource: sl(),
         categoriesLocalDataSource: sl(),
         alertsRemoteDataSource: sl(),
         accountDeleteRequestsRemoteDataSource: sl(),
         chatRemoteDataSource: sl(),
         referralRemoteDataSource: sl(),
+        staticPagesRemoteDataSource: sl(),
         network: sl(),
       ),
     )
@@ -155,6 +171,12 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<SubmitFeedbackUseCase>(
       () => SubmitFeedbackUseCase(sl()),
     )
+    ..registerLazySingleton<GetPrivacyPolicyUseCase>(
+      () => GetPrivacyPolicyUseCase(sl()),
+    )
+    ..registerLazySingleton<GetTermsConditionsUseCase>(
+      () => GetTermsConditionsUseCase(sl()),
+    )
     ..registerLazySingleton<GetReferralInfoUseCase>(
       () => GetReferralInfoUseCase(sl()),
     )
@@ -163,6 +185,12 @@ Future<void> _initDashboard() async {
     )
     ..registerLazySingleton<RedeemCouponUseCase>(
       () => RedeemCouponUseCase(sl()),
+    )
+    ..registerLazySingleton<GetFavouritesUseCase>(
+      () => GetFavouritesUseCase(sl()),
+    )
+    ..registerLazySingleton<ToggleFavouriteUseCase>(
+      () => ToggleFavouriteUseCase(sl()),
     )
     ..registerLazySingleton<GetRelatedProductsUseCase>(
       () => GetRelatedProductsUseCase(sl()),
@@ -184,6 +212,15 @@ Future<void> _initDashboard() async {
     )
     ..registerLazySingleton<GetCategoriesUseCase>(
       () => GetCategoriesUseCase(sl()),
+    )
+    ..registerLazySingleton<GetSubcategoriesUseCase>(
+      () => GetSubcategoriesUseCase(sl()),
+    )
+    ..registerLazySingleton<GetFeaturesUseCase>(
+      () => GetFeaturesUseCase(sl()),
+    )
+    ..registerLazySingleton<GetLocationsUseCase>(
+      () => GetLocationsUseCase(sl()),
     )
     ..registerLazySingleton<GetAlertsUseCase>(
       () => GetAlertsUseCase(sl()),
@@ -260,6 +297,15 @@ Future<void> _initDashboard() async {
     )
     ..registerFactory<CategoriesCubit>(
       () => CategoriesCubit(sl()),
+    )
+    ..registerFactory<SubcategoriesCubit>(
+      () => SubcategoriesCubit(sl()),
+    )
+    ..registerFactory<FeaturesCubit>(
+      () => FeaturesCubit(sl()),
+    )
+    ..registerFactory<LocationsCubit>(
+      () => LocationsCubit(sl()),
     )
     ..registerFactory<AlertsCubit>(
       () => AlertsCubit(sl(), sl(), sl()),

@@ -7,9 +7,17 @@ import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/create_product_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/category_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/feature_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/subcategory_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_state.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/subcategories/subcategories_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/subcategories/subcategories_state.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/features/features_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/features/features_state.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_state.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/ad_input.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_state.dart';
@@ -42,9 +50,15 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
   final _monthlyDurationController = TextEditingController();
 
   int? _selectedCategoryId;
+  int? _selectedSubcategoryId;
   String _selectedPurpose = 'Sale';
   String? _selectedAreaLocation;
   String? _selectedMapLocation;
+
+  // Maps to store dynamic feature values
+  Map<int, String> _selectedFeatureValues = {};
+  Map<int, TextEditingController> _featureControllers = {};
+  Map<int, String> _featureErrors = {};
 
   @override
   void dispose() {
@@ -62,6 +76,10 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
     _dailyDurationController.dispose();
     _weeklyDurationController.dispose();
     _monthlyDurationController.dispose();
+    // Dispose feature controllers
+    for (var controller in _featureControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -283,12 +301,102 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                       onSelected: (id) {
                         setState(() {
                           _selectedCategoryId = id;
+                          _selectedSubcategoryId =
+                              null; // Clear subcategory when category changes
+                          _selectedFeatureValues
+                              .clear(); // Clear previous feature selections
+                          _featureErrors.clear(); // Clear previous errors
+                          // Dispose and clear feature controllers
+                          for (var controller in _featureControllers.values) {
+                            controller.dispose();
+                          }
+                          _featureControllers.clear();
                         });
+                        // Fetch subcategories for the selected category
+                        context.read<SubcategoriesCubit>().fetch();
                       },
                     );
                   },
                 ),
                 SizedBox(height: 3.h),
+                // Subcategory dropdown - shown after category is selected
+                if (_selectedCategoryId != null)
+                  BlocBuilder<SubcategoriesCubit, SubcategoriesState>(
+                    builder: (context, subcategoriesState) {
+                      if (subcategoriesState.isLoading) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Subcategory',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.blueGray374957,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.grayD9),
+                              ),
+                              alignment: Alignment.center,
+                              child: const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            SizedBox(height: 3.h),
+                          ],
+                        );
+                      }
+
+                      if (subcategoriesState.hasData) {
+                        // Filter subcategories for selected category
+                        final categorySubcategories = subcategoriesState
+                            .subcategories
+                            .where((s) => s.categoryId == _selectedCategoryId)
+                            .toList();
+
+                        if (categorySubcategories.isNotEmpty) {
+                          return Column(
+                            children: [
+                              _SubcategoryDropdownField(
+                                subcategories: categorySubcategories,
+                                selectedId: _selectedSubcategoryId,
+                                onSelected: (id) {
+                                  setState(() {
+                                    _selectedSubcategoryId = id;
+                                    _selectedFeatureValues
+                                        .clear(); // Clear previous feature selections
+                                    _featureErrors
+                                        .clear(); // Clear previous errors
+                                    // Dispose and clear feature controllers
+                                    for (var controller
+                                        in _featureControllers.values) {
+                                      controller.dispose();
+                                    }
+                                    _featureControllers.clear();
+                                  });
+                                  // Fetch features for the selected subcategory
+                                  context
+                                      .read<FeaturesCubit>()
+                                      .fetch(subcategoryId: id);
+                                },
+                              ),
+                              SizedBox(height: 3.h),
+                            ],
+                          );
+                        }
+                      }
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 AdInput(
                   controller: _titleController,
                   labelText: 'Title',
@@ -315,25 +423,50 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                 SizedBox(height: 3.h),
                 _buildPriceSection(),
                 SizedBox(height: 3.h),
-                AdLocationDropdown(
-                  labelText: 'Ad Area Location',
-                  value: _selectedAreaLocation,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedAreaLocation = value;
-                    });
+                BlocBuilder<LocationsCubit, LocationsState>(
+                  builder: (context, locationsState) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AdLocationDropdown(
+                          labelText: 'Ad Area Location',
+                          value: _selectedAreaLocation,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedAreaLocation = value;
+                            });
+                          },
+                        ),
+                        SizedBox(height: 2.w),
+                        if (locationsState.isLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        else if (locationsState.hasError)
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Unable to load locations',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: Colors.red,
+                              ),
+                            ),
+                          )
+                        else if (locationsState.hasData)
+                          Wrap(
+                            spacing: 2.w,
+                            runSpacing: 1.w,
+                            children: locationsState.locations
+                                .map((location) =>
+                                    _buildLocationChip(location.name))
+                                .toList(),
+                          ),
+                      ],
+                    );
                   },
-                ),
-                SizedBox(height: 2.w),
-                Wrap(
-                  spacing: 2.w,
-                  runSpacing: 1.w,
-                  children: [
-                    'Home Spintex',
-                    'Shop Accra',
-                    'Shop East Legon',
-                    'Shop Kumasi'
-                  ].map((location) => _buildLocationChip(location)).toList(),
                 ),
                 SizedBox(height: 3.w),
                 Row(
@@ -354,25 +487,50 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   ],
                 ),
                 SizedBox(height: 3.h),
-                AdLocationDropdown(
-                  labelText: 'Ad Actual Map Location',
-                  value: _selectedMapLocation,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedMapLocation = value;
-                    });
+                BlocBuilder<LocationsCubit, LocationsState>(
+                  builder: (context, locationsState) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AdLocationDropdown(
+                          labelText: 'Ad Actual Map Location',
+                          value: _selectedMapLocation,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedMapLocation = value;
+                            });
+                          },
+                        ),
+                        SizedBox(height: 2.w),
+                        if (locationsState.isLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        else if (locationsState.hasError)
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Unable to load locations',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: Colors.red,
+                              ),
+                            ),
+                          )
+                        else if (locationsState.hasData)
+                          Wrap(
+                            spacing: 2.w,
+                            runSpacing: 1.w,
+                            children: locationsState.locations
+                                .map((location) =>
+                                    _buildLocationChip(location.name))
+                                .toList(),
+                          ),
+                      ],
+                    );
                   },
-                ),
-                SizedBox(height: 2.w),
-                Wrap(
-                  spacing: 2.w,
-                  runSpacing: 1.w,
-                  children: [
-                    'Home Spintex',
-                    'Shop Accra',
-                    'Shop East Legon',
-                    'Shop Kumasi'
-                  ].map((location) => _buildLocationChip(location)).toList(),
                 ),
                 SizedBox(height: 3.h),
                 Text(
@@ -382,136 +540,64 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   ),
                 ),
                 SizedBox(height: 2.w),
-                AdDropdown<String>(
-                  value: _brandController.text.isEmpty
-                      ? null
-                      : _brandController.text,
-                  labelText: 'Brand',
-                  hintText: 'Select brand',
-                  items: const [
-                    DropdownMenuItem<String>(
-                      value: 'Apple',
-                      child: Text('Apple'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Samsung',
-                      child: Text('Samsung'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Nike',
-                      child: Text('Nike'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Sony',
-                      child: Text('Sony'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'LG',
-                      child: Text('LG'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'HP',
-                      child: Text('HP'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Dell',
-                      child: Text('Dell'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Other',
-                      child: Text('Other'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _brandController.text = value ?? '';
-                    });
-                  },
-                ),
-                SizedBox(height: 3.w),
-                AdDropdown<String>(
-                  value:
-                      _key1Controller.text.isEmpty ? null : _key1Controller.text,
-                  labelText: 'Key 1',
-                  hintText: 'Select key 1',
-                  items: const [
-                    DropdownMenuItem<String>(
-                      value: 'New',
-                      child: Text('New'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Used',
-                      child: Text('Used'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Refurbished',
-                      child: Text('Refurbished'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Like New',
-                      child: Text('Like New'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _key1Controller.text = value ?? '';
-                    });
-                  },
-                ),
-                SizedBox(height: 3.w),
-                AdDropdown<String>(
-                  value:
-                      _key2Controller.text.isEmpty ? null : _key2Controller.text,
-                  labelText: 'Key 2',
-                  hintText: 'Select key 2',
-                  items: const [
-                    DropdownMenuItem<String>(
-                      value: 'Original',
-                      child: Text('Original'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Copy',
-                      child: Text('Copy'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'Generic',
-                      child: Text('Generic'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _key2Controller.text = value ?? '';
-                    });
-                  },
-                ),
-                SizedBox(height: 3.w),
-                AdDropdown<String>(
-                  value:
-                      _key3Controller.text.isEmpty ? null : _key3Controller.text,
-                  labelText: 'Key 3',
-                  hintText: 'Select key 3',
-                  items: const [
-                    DropdownMenuItem<String>(
-                      value: 'Warranty',
-                      child: Text('Warranty'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'No Warranty',
-                      child: Text('No Warranty'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: '1 Year',
-                      child: Text('1 Year'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: '2 Years',
-                      child: Text('2 Years'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _key3Controller.text = value ?? '';
-                    });
+                // Dynamic features from API based on selected subcategory
+                BlocBuilder<FeaturesCubit, FeaturesState>(
+                  builder: (context, featuresState) {
+                    if (featuresState.isLoading) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    if (featuresState.hasError) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Unable to load features: ${featuresState.message ?? "Unknown error"}',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: Colors.red,
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (!featuresState.hasData ||
+                        _selectedSubcategoryId == null) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Select a subcategory to view available features',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.gray8B959E,
+                          ),
+                        ),
+                      );
+                    }
+
+                    // All features are already filtered by subcategory from API
+                    if (featuresState.features.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'No features available for this subcategory',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.gray8B959E,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: featuresState.features.map((feature) {
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 3.w),
+                          child: _buildDynamicFeatureDropdown(feature),
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
                 SizedBox(height: 3.h),
@@ -674,6 +760,187 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
         return 'SALE';
     }
   }
+
+  Widget _buildDynamicFeatureDropdown(FeatureEntity feature) {
+    // Create a controller for this feature if it doesn't exist
+    final controller = _featureControllers.putIfAbsent(
+      feature.id,
+      () =>
+          TextEditingController(text: _selectedFeatureValues[feature.id] ?? ''),
+    );
+
+    final hasOptions = feature.options != null && feature.options!.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AdInput(
+          controller: controller,
+          labelText: feature.name,
+          hintText: hasOptions
+              ? 'Enter or select ${feature.name.toLowerCase()}'
+              : 'Enter ${feature.name.toLowerCase()}',
+          suffixIcon: GestureDetector(
+            onTap: () {
+              if (hasOptions) {
+                _showFeatureOptionsBottomSheet(feature, controller);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No options available for ${feature.name}'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: Icon(
+              Icons.arrow_drop_down,
+              color: hasOptions
+                  ? AppColors.gray8B959E
+                  : AppColors.gray8B959E.withOpacity(0.5),
+              size: 24,
+            ),
+          ),
+          onChanged: (value) {
+            setState(() {
+              _selectedFeatureValues[feature.id] = value;
+              // Validate input against options only if options exist
+              if (hasOptions &&
+                  value.isNotEmpty &&
+                  !feature.options!.contains(value)) {
+                _featureErrors[feature.id] =
+                    'Invalid ${feature.name.toLowerCase()}. Please select from dropdown.';
+              } else {
+                _featureErrors.remove(feature.id);
+              }
+            });
+          },
+        ),
+        if (_featureErrors.containsKey(feature.id))
+          Padding(
+            padding: EdgeInsets.only(top: 1.w, left: 3.w),
+            child: Text(
+              _featureErrors[feature.id]!,
+              style: AppTypography.bodySmall.copyWith(
+                color: Colors.red,
+                fontSize: 12.sp,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showFeatureOptionsBottomSheet(
+      FeatureEntity feature, TextEditingController controller) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.blueGray374957
+                : AppColors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.gray8B959E.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 2.w),
+                child: Text(
+                  'Select ${feature.name}',
+                  style: AppTypography.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18.sp,
+                  ),
+                ),
+              ),
+              SizedBox(height: 2.h),
+              // Options list
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: 50.h,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: feature.options!.length,
+                  itemBuilder: (context, index) {
+                    final option = feature.options![index];
+                    final isSelected = controller.text == option;
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          controller.text = option;
+                          _selectedFeatureValues[feature.id] = option;
+                          _featureErrors.remove(feature.id);
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 4.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withOpacity(0.1)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                option,
+                                style: AppTypography.body.copyWith(
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                  color: isSelected
+                                      ? AppColors.blueGray374957
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 2.h),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _CategoryBottomSheetField extends StatelessWidget {
@@ -744,8 +1011,7 @@ class _CategoryBottomSheetField extends StatelessWidget {
                             ),
                             IconButton(
                               icon: const Icon(Icons.close),
-                              onPressed: () =>
-                                  Navigator.of(sheetContext).pop(),
+                              onPressed: () => Navigator.of(sheetContext).pop(),
                             ),
                           ],
                         ),
@@ -754,8 +1020,8 @@ class _CategoryBottomSheetField extends StatelessWidget {
                           'Choose the most relevant category for your ad. '
                           'These options are loaded from the live admin categories.',
                           style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.blueGray263238
-                                .withValues(alpha: 0.7),
+                            color:
+                                AppColors.blueGray263238.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -767,15 +1033,15 @@ class _CategoryBottomSheetField extends StatelessWidget {
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 4),
                             itemBuilder: (context, index) {
-                              final category = categoriesState.categories[index];
+                              final category =
+                                  categoriesState.categories[index];
                               return ListTile(
                                 title: Text(category.name),
                                 subtitle: category.description != null &&
                                         category.description!.trim().isNotEmpty
                                     ? Text(
                                         category.description!,
-                                        style:
-                                            AppTypography.bodySmall.copyWith(
+                                        style: AppTypography.bodySmall.copyWith(
                                           color: AppColors.blueGray263238
                                               .withValues(alpha: 0.7),
                                         ),
@@ -813,6 +1079,173 @@ class _CategoryBottomSheetField extends StatelessWidget {
                 Expanded(
                   child: Text(
                     selectedLabel ?? 'Select product category',
+                    style: AppTypography.body.copyWith(
+                      color: selectedLabel == null
+                          ? AppColors.gray8B959E
+                          : (isDark
+                              ? AppColors.white
+                              : AppColors.blueGray374957),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppColors.grayD9.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: AppColors.blueGray374957,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SubcategoryDropdownField extends StatelessWidget {
+  const _SubcategoryDropdownField({
+    required this.subcategories,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<SubcategoryEntity> subcategories;
+  final int? selectedId;
+  final ValueChanged<int?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    String? selectedLabel;
+    if (selectedId != null) {
+      final match = subcategories.firstWhere(
+        (s) => s.id == selectedId,
+        orElse: () => const SubcategoryEntity(id: -1, name: '', categoryId: -1),
+      );
+      if (match.id != -1) {
+        selectedLabel = match.name;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Subcategory',
+          style: AppTypography.bodySmall.copyWith(
+            color: isDark ? AppColors.white : AppColors.blueGray374957,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () async {
+            final int? picked = await showModalBottomSheet<int>(
+              context: context,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              builder: (sheetContext) {
+                return SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Select subcategory',
+                              style: AppTypography.bodyLarge,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.of(sheetContext).pop(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Choose a subcategory to narrow down your product listing.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color:
+                                AppColors.blueGray263238.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 400),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: subcategories.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 4),
+                            itemBuilder: (context, index) {
+                              final subcategory = subcategories[index];
+                              return ListTile(
+                                title: Text(subcategory.name),
+                                subtitle: subcategory.description != null &&
+                                        subcategory.description!
+                                            .trim()
+                                            .isNotEmpty
+                                    ? Text(
+                                        subcategory.description!,
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: AppColors.blueGray263238
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      )
+                                    : null,
+                                onTap: () => Navigator.of(sheetContext)
+                                    .pop<int>(subcategory.id),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+
+            if (picked != null) {
+              onSelected(picked);
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.blueGray374957 : AppColors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.blueGray374957 : AppColors.grayD9,
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selectedLabel ?? 'Select subcategory',
                     style: AppTypography.body.copyWith(
                       color: selectedLabel == null
                           ? AppColors.gray8B959E

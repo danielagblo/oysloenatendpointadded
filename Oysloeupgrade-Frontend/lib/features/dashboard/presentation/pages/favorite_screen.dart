@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
+import 'package:oysloe_mobile/core/common/widgets/app_snackbar.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
+import 'package:oysloe_mobile/core/usecase/usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/product_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/favourites_usecases.dart';
+import 'package:responsive_sizer/responsive_sizer.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -13,47 +18,77 @@ class FavoriteScreen extends StatefulWidget {
 }
 
 class _FavoriteScreenState extends State<FavoriteScreen> {
-  final List<FavoriteItem> _favoriteItems = [
-    FavoriteItem(
-      id: '1',
-      title: 'Mercedes Benz S CLASS 2023',
-      price: '₵ 023,000',
-      imageUrl: 'assets/images/ad1.jpg',
-      isFavorite: true,
-    ),
-    FavoriteItem(
-      id: '2',
-      title: 'Mercedes Benz S CLASS 2023',
-      price: '₵ 023,000',
-      imageUrl: 'assets/images/ad2.jpg',
-      isFavorite: true,
-    ),
-    FavoriteItem(
-      id: '3',
-      title: 'Mercedes Benz S CLASS 2023',
-      price: '₵ 023,000',
-      imageUrl: 'assets/images/ad3.jpg',
-      isFavorite: true,
-    ),
-  ];
+  final GetFavouritesUseCase _getFavouritesUseCase = sl<GetFavouritesUseCase>();
+  final ToggleFavouriteUseCase _toggleFavouriteUseCase =
+      sl<ToggleFavouriteUseCase>();
 
-  void _toggleFavorite(String itemId) {
+  List<ProductEntity> _items = <ProductEntity>[];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavourites();
+  }
+
+  Future<void> _loadFavourites() async {
     setState(() {
-      final index = _favoriteItems.indexWhere((item) => item.id == itemId);
-      if (index != -1) {
-        _favoriteItems[index] = FavoriteItem(
-          id: _favoriteItems[index].id,
-          title: _favoriteItems[index].title,
-          price: _favoriteItems[index].price,
-          imageUrl: _favoriteItems[index].imageUrl,
-          isFavorite: !_favoriteItems[index].isFavorite,
-        );
-
-        if (!_favoriteItems[index].isFavorite) {
-          _favoriteItems.removeAt(index);
-        }
-      }
+      _isLoading = true;
+      _error = null;
     });
+
+    final result = await _getFavouritesUseCase(const NoParams());
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        setState(() {
+          _error = failure.message.isEmpty
+              ? 'Unable to load favourites right now.'
+              : failure.message;
+          _isLoading = false;
+        });
+      },
+      (favourites) {
+        setState(() {
+          _items = favourites;
+          _isLoading = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _onToggleFavourite(ProductEntity product) async {
+    final int productId = product.id;
+    final result = await _toggleFavouriteUseCase(
+      ToggleFavouriteParams(productId: productId),
+    );
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => showErrorSnackBar(
+        context,
+        failure.message.isEmpty
+            ? 'Unable to update favourite.'
+            : failure.message,
+      ),
+      (updated) {
+        setState(() {
+          if (!updated.isFavourite) {
+            _items.removeWhere((p) => p.id == updated.id);
+            showSuccessSnackBar(context, 'Removed from favorites');
+          } else {
+            final idx = _items.indexWhere((p) => p.id == updated.id);
+            if (idx >= 0) {
+              _items[idx] = updated;
+            } else {
+              _items.insert(0, updated);
+            }
+          }
+        });
+      },
+    );
   }
 
   @override
@@ -64,26 +99,51 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
         backgroundColor: AppColors.white,
         title: 'Favorite',
       ),
-      body: _favoriteItems.isEmpty ? _buildEmptyState() : _buildFavoriteList(),
-    );
-  }
-
-  Widget _buildFavoriteList() {
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: 0.6.h),
-      itemCount: _favoriteItems.length,
-      itemBuilder: (context, index) {
-        final item = _favoriteItems[index];
-
-        return _FavoriteCard(
-          item: item,
-          onFavoriteTap: () => _toggleFavorite(item.id),
-        );
-      },
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _items.isEmpty
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  color: AppColors.blueGray374957,
+                  onRefresh: _loadFavourites,
+                  child: ListView.builder(
+                    padding: EdgeInsets.symmetric(vertical: 0.6.h),
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      return _FavoriteCard(
+                        item: item,
+                        onFavoriteTap: () => _onToggleFavourite(item),
+                      );
+                    },
+                  ),
+                ),
     );
   }
 
   Widget _buildEmptyState() {
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _error!,
+              style: AppTypography.body.copyWith(
+                color: AppColors.blueGray374957,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 2.h),
+            ElevatedButton(
+              onPressed: _loadFavourites,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -91,7 +151,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
           SvgPicture.asset('assets/icons/no_data.svg', height: 10.h),
           SizedBox(height: 2.h),
           Text(
-            'No data to show',
+            'No favorites yet',
             style: AppTypography.bodyLarge.copyWith(
               color: AppColors.blueGray374957,
             ),
@@ -103,7 +163,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
 }
 
 class _FavoriteCard extends StatelessWidget {
-  final FavoriteItem item;
+  final ProductEntity item;
   final VoidCallback onFavoriteTap;
 
   const _FavoriteCard({
@@ -113,38 +173,42 @@ class _FavoriteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = item.image.isNotEmpty
+        ? item.image
+        : (item.images.isNotEmpty ? item.images.first : '');
     return Container(
-      margin: EdgeInsets.only(bottom: 0.6.h),
+      margin: EdgeInsets.symmetric(vertical: 0.8.h, horizontal: 3.w),
       padding: EdgeInsets.all(3.w),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 80,
-            height: 70,
+            height: 12.h,
+            width: 22.w,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: AppColors.grayD9.withValues(alpha: 0.3),
+              image: imageUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              color: AppColors.grayF9,
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                item.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: AppColors.grayD9.withValues(alpha: 0.3),
-                    child: Icon(
-                      Icons.image,
-                      color: AppColors.blueGray374957.withValues(alpha: 0.5),
-                    ),
-                  );
-                },
-              ),
-            ),
+            child: imageUrl.isEmpty
+                ? const Icon(Icons.image_not_supported_outlined,
+                    color: AppColors.gray8B959E)
+                : null,
           ),
           SizedBox(width: 3.w),
           Expanded(
@@ -152,7 +216,7 @@ class _FavoriteCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title,
+                  item.name,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.blueGray374957,
@@ -176,14 +240,13 @@ class _FavoriteCard extends StatelessWidget {
           Container(
             width: 30,
             decoration: BoxDecoration(
-                color: Color(0xFFF3F3F3),
-                borderRadius: BorderRadius.circular(5)),
+              color: const Color(0xFFF3F3F3),
+              borderRadius: BorderRadius.circular(5),
+            ),
             child: IconButton(
               onPressed: onFavoriteTap,
               icon: SvgPicture.asset(
-                item.isFavorite
-                    ? 'assets/icons/favorite.svg'
-                    : 'assets/icons/unfavorite.svg',
+                'assets/icons/favorite.svg',
                 width: 19,
                 height: 19,
               ),
@@ -198,20 +261,4 @@ class _FavoriteCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class FavoriteItem {
-  final String id;
-  final String title;
-  final String price;
-  final String imageUrl;
-  final bool isFavorite;
-
-  FavoriteItem({
-    required this.id,
-    required this.title,
-    required this.price,
-    required this.imageUrl,
-    required this.isFavorite,
-  });
 }

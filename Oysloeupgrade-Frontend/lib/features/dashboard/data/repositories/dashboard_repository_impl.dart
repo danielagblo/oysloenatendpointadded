@@ -8,51 +8,74 @@ import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 import '../../domain/entities/review_entity.dart';
 import '../../domain/entities/category_entity.dart';
+import '../../domain/entities/subcategory_entity.dart';
+import '../../domain/entities/feature_entity.dart';
+import '../../domain/entities/location_entity.dart';
 import '../../domain/entities/alert_entity.dart';
 import '../../domain/entities/account_delete_request_entity.dart';
 import '../../domain/entities/chat_room_entity.dart';
 import '../../domain/entities/chat_message_entity.dart';
 import '../datasources/products_remote_data_source.dart';
 import '../datasources/categories_remote_data_source.dart';
+import '../datasources/subcategories_remote_data_source.dart';
+import '../datasources/features_remote_data_source.dart';
+import '../datasources/locations_remote_data_source.dart';
 import '../datasources/categories_local_data_source.dart';
 import '../datasources/alerts_remote_data_source.dart';
 import '../datasources/account_delete_requests_remote_data_source.dart';
 import '../datasources/chat_remote_data_source.dart';
 import '../datasources/referral_remote_data_source.dart';
+import '../datasources/static_pages_remote_data_source.dart';
 import '../models/category_model.dart';
+import '../models/subcategory_model.dart';
+import '../models/feature_model.dart';
+import '../models/location_model.dart';
 import '../models/alert_model.dart';
 import '../../domain/entities/referral_entity.dart';
+import '../../domain/entities/static_page_entity.dart';
 
 class DashboardRepositoryImpl implements DashboardRepository {
   static const Duration _categoriesCacheTtl = Duration(hours: 12);
   DashboardRepositoryImpl({
     required ProductsRemoteDataSource remoteDataSource,
     required CategoriesRemoteDataSource categoriesRemoteDataSource,
+    required SubcategoriesRemoteDataSource subcategoriesRemoteDataSource,
+    required FeaturesRemoteDataSource featuresRemoteDataSource,
+    required LocationsRemoteDataSource locationsRemoteDataSource,
     required CategoriesLocalDataSource categoriesLocalDataSource,
     required AlertsRemoteDataSource alertsRemoteDataSource,
     required AccountDeleteRequestsRemoteDataSource
         accountDeleteRequestsRemoteDataSource,
     required ChatRemoteDataSource chatRemoteDataSource,
     required ReferralRemoteDataSource referralRemoteDataSource,
+    required StaticPagesRemoteDataSource staticPagesRemoteDataSource,
     required Network network,
   })  : _remoteDataSource = remoteDataSource,
         _categoriesRemoteDataSource = categoriesRemoteDataSource,
+        _subcategoriesRemoteDataSource = subcategoriesRemoteDataSource,
+        _featuresRemoteDataSource = featuresRemoteDataSource,
+        _locationsRemoteDataSource = locationsRemoteDataSource,
         _categoriesLocalDataSource = categoriesLocalDataSource,
         _alertsRemoteDataSource = alertsRemoteDataSource,
         _accountDeleteRequestsRemoteDataSource =
             accountDeleteRequestsRemoteDataSource,
         _chatRemoteDataSource = chatRemoteDataSource,
         _referralRemoteDataSource = referralRemoteDataSource,
+        _staticPagesRemoteDataSource = staticPagesRemoteDataSource,
         _network = network;
 
   final ProductsRemoteDataSource _remoteDataSource;
   final CategoriesRemoteDataSource _categoriesRemoteDataSource;
+  final SubcategoriesRemoteDataSource _subcategoriesRemoteDataSource;
+  final FeaturesRemoteDataSource _featuresRemoteDataSource;
+  final LocationsRemoteDataSource _locationsRemoteDataSource;
   final CategoriesLocalDataSource _categoriesLocalDataSource;
   final AlertsRemoteDataSource _alertsRemoteDataSource;
   final AccountDeleteRequestsRemoteDataSource
       _accountDeleteRequestsRemoteDataSource;
   final ChatRemoteDataSource _chatRemoteDataSource;
   final ReferralRemoteDataSource _referralRemoteDataSource;
+  final StaticPagesRemoteDataSource _staticPagesRemoteDataSource;
 
   @override
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>
@@ -247,6 +270,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
       return left(const ServerFailure('Unexpected error occurred'));
     }
   }
+
   final Network _network;
 
   @override
@@ -260,8 +284,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
 
     try {
-      final String chatRoomId = await _chatRemoteDataSource
-          .getOrCreateChatRoomId(
+      final String chatRoomId =
+          await _chatRemoteDataSource.getOrCreateChatRoomId(
         productId: productId.toString(),
         userId: userId,
       );
@@ -290,9 +314,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
 
     try {
-      final List<ChatRoomEntity> rooms = (await _chatRemoteDataSource
-              .getChatRooms(isSupport: isSupport))
-          .cast<ChatRoomEntity>();
+      final List<ChatRoomEntity> rooms =
+          (await _chatRemoteDataSource.getChatRooms(isSupport: isSupport))
+              .cast<ChatRoomEntity>();
       return right(rooms);
     } on ApiException catch (error) {
       return left(APIFailure(error.message));
@@ -307,7 +331,6 @@ class DashboardRepositoryImpl implements DashboardRepository {
       return left(const ServerFailure('Unexpected error occurred'));
     }
   }
-
 
   @override
   Future<Either<Failure, List<ChatMessageEntity>>> getChatMessages({
@@ -348,8 +371,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
 
     try {
-      final ChatMessageEntity message =
-          await _chatRemoteDataSource.sendMessage(
+      final ChatMessageEntity message = await _chatRemoteDataSource.sendMessage(
         chatRoomId: chatRoomId,
         text: text,
       );
@@ -462,9 +484,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
 
     try {
-      final List<ProductEntity> products = (await _remoteDataSource
-              .getRelatedProducts(productId: productId))
-          .cast<ProductEntity>();
+      final List<ProductEntity> products =
+          (await _remoteDataSource.getRelatedProducts(productId: productId))
+              .cast<ProductEntity>();
       return right(products);
     } on ApiException catch (error) {
       return left(APIFailure(error.message));
@@ -586,6 +608,58 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } catch (error, stackTrace) {
       logError(
         'Unexpected product report failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProductEntity>> toggleFavourite({
+    required int productId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final ProductEntity product =
+          await _remoteDataSource.toggleFavourite(productId: productId);
+      return right(product);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected favourite toggle failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ProductEntity>>> getFavourites() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<ProductEntity> items =
+          (await _remoteDataSource.getFavourites()).cast<ProductEntity>();
+      return right(items);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected favourites fetch failure',
         error: error,
         stackTrace: stackTrace,
       );
@@ -785,6 +859,90 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
+  Future<Either<Failure, List<SubcategoryEntity>>> getSubcategories({
+    int? categoryId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<SubcategoryModel> subcategories =
+          await _subcategoriesRemoteDataSource.getSubcategories(
+        categoryId: categoryId,
+      );
+      return right(subcategories.cast<SubcategoryEntity>());
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected subcategories fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<FeatureEntity>>> getFeatures({
+    int? subcategoryId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<FeatureModel> features =
+          await _featuresRemoteDataSource.getFeatures(
+        subcategoryId: subcategoryId,
+      );
+
+      return right(features.cast<FeatureEntity>());
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected features fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<LocationEntity>>> getLocations() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<LocationModel> locations =
+          await _locationsRemoteDataSource.getLocations();
+      return right(locations.cast<LocationEntity>());
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected locations fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<AlertEntity>>> getAlerts() async {
     final bool isConnected = await _network.isConnected;
     if (!isConnected) {
@@ -979,6 +1137,56 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } catch (error, stackTrace) {
       logError(
         'Unexpected coupon redeem failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StaticPageEntity>> getPrivacyPolicy() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final StaticPageEntity content =
+          await _staticPagesRemoteDataSource.fetchPrivacyPolicy();
+      return right(content);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected privacy policy fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StaticPageEntity>> getTermsConditions() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final StaticPageEntity content =
+          await _staticPagesRemoteDataSource.fetchTermsConditions();
+      return right(content);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected terms & conditions fetch failure',
         error: error,
         stackTrace: stackTrace,
       );

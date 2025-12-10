@@ -36,6 +36,12 @@ abstract class ProductsRemoteDataSource {
     required String reason,
   });
 
+  Future<ProductModel> toggleFavourite({
+    required int productId,
+  });
+
+  Future<List<ProductModel>> getFavourites();
+
   Future<List<ReviewModel>> getProductReviews({
     required int productId,
   });
@@ -189,6 +195,40 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
           'reason': reason,
         },
       );
+    } on DioException catch (error) {
+      throw ApiException(ApiHelper.getHumanReadableMessage(error));
+    } catch (error) {
+      throw ServerException(error.toString());
+    }
+  }
+
+  @override
+  Future<ProductModel> toggleFavourite({required int productId}) async {
+    try {
+      await _client.post<dynamic>(
+        AppStrings.productFavouriteURL(productId.toString()),
+        data: const <String, dynamic>{},
+      );
+
+      // The favourite endpoint returns only a status. Fetch the updated product
+      // detail to get fresh favourite counts and flags.
+      final Response<dynamic> detailResponse = await _client.get<dynamic>(
+        AppStrings.productDetailURL(productId.toString()),
+      );
+      return _parseProduct(detailResponse.data);
+    } on DioException catch (error) {
+      throw ApiException(ApiHelper.getHumanReadableMessage(error));
+    } catch (error) {
+      throw ServerException(error.toString());
+    }
+  }
+
+  @override
+  Future<List<ProductModel>> getFavourites() async {
+    try {
+      final Response<dynamic> response =
+          await _client.get<dynamic>(AppStrings.favouritesURL);
+      return _parseProductList(response.data);
     } on DioException catch (error) {
       throw ApiException(ApiHelper.getHumanReadableMessage(error));
     } catch (error) {

@@ -1,0 +1,337 @@
+# Oysloe API Endpoints Configuration
+# Base URL: https://api.oysloe.com
+# API Version: v1
+
+base_url: https://api.oysloe.com
+api_base_path: /api-v1
+
+endpoints:
+  # Authentication Endpoints
+  auth:
+    register:
+      path: /api-v1/register/
+      method: POST
+      description: Register a new user account
+      
+    login:
+      path: /api-v1/login/
+      method: POST
+      description: User login with credentials
+      
+    reset_password:
+      path: /api-v1/resetpassword/
+      method: POST
+      description: Request password reset
+      
+    verify_otp:
+      path: /api-v1/verifyotp/
+      method: POST
+      description: Verify OTP code
+      
+    otp_login:
+      path: /api-v1/otplogin/
+      method: POST
+      description: Login using OTP
+
+  # Profile Endpoints
+  profile:
+    user_profile:
+      path: /api-v1/userprofile/
+      methods: [GET, PUT, PATCH]
+      description: Get or update user profile information
+
+  # Catalog Endpoints
+  catalog:
+    products:
+      list:
+        path: /api-v1/products/
+        methods: [GET, POST]
+        description: List all products or create new product
+        
+      detail:
+        path: /api-v1/products/{id}/
+        methods: [GET, PUT, PATCH, DELETE]
+        description: Get, update, or delete specific product
+        
+      related:
+        path: /api-v1/products/related/
+        method: GET
+        description: Get related products
+        
+      mark_as_taken:
+        path: /api-v1/products/{id}/mark-as-taken/
+        method: POST
+        description: Mark a product as taken
+        
+      set_status:
+        path: /api-v1/products/{id}/set-status/
+        method: POST
+        description: Update product status
+        
+      report:
+        path: /api-v1/products/{id}/report/
+        method: POST
+        description: Report a product
+        
+      favourite:
+        path: /api-v1/products/{id}/favourite/
+        methods: [POST, DELETE]
+        description: Add or remove product from favourites
+        
+      favourites_list:
+        path: /api-v1/products/favourites/
+        method: GET
+        description: Get user's favourite products
+    
+    categories:
+      path: /api-v1/categories/
+      methods: [GET]
+      description: List all categories
+      
+    subcategories:
+      path: /api-v1/subcategories/
+      methods: [GET]
+      description: List all subcategories
+      
+    features:
+      path: /api-v1/features/
+      methods: [GET]
+      description: List all product features
+      
+    product_features:
+      path: /api-v1/product-features/
+      methods: [GET]
+      description: List product-feature relationships
+      
+    product_images:
+      path: /api-v1/product-images/
+      methods: [GET, POST]
+      description: List or upload product images
+
+  # Reviews Endpoints
+  reviews:
+    list:
+      path: /api-v1/reviews/
+      methods: [GET, POST]
+      description: List all reviews or create new review
+      
+    detail:
+      path: /api-v1/reviews/{id}/
+      methods: [GET, PUT, PATCH, DELETE]
+      description: Get, update, or delete specific review
+
+  # Alerts Endpoints
+  alerts:
+    list:
+      path: /api-v1/alerts/
+      methods: [GET, POST]
+      description: List all alerts or create new alert
+      
+    detail:
+      path: /api-v1/alerts/{id}/
+      methods: [GET, PUT, PATCH, DELETE]
+      description: Get, update, or delete specific alert
+      
+    mark_read:
+      path: /api-v1/alerts/{id}/mark-read/
+      method: POST
+      description: Mark alert as read
+      
+    delete:
+      path: /api-v1/alerts/{id}/delete/
+      method: DELETE
+      description: Delete specific alert
+
+  # Subscriptions & Payments Endpoints
+  subscriptions:
+    subscriptions:
+      path: /api-v1/subscriptions/
+      methods: [GET]
+      description: List available subscription plans
+      
+    user_subscriptions:
+      path: /api-v1/user-subscriptions/
+      methods: [GET, POST]
+      description: Get user subscriptions or create new subscription
+      
+    payments:
+      path: /api-v1/payments/
+      methods: [GET, POST]
+      description: List payment history or create new payment
+      
+    paystack:
+      path: /api-v1/paystack/
+      methods: [POST]
+      description: Paystack payment integration
+
+  # Account Management Endpoints
+  account:
+    delete_requests:
+      list:
+        path: /api-v1/account-delete-requests/
+        methods: [GET, POST]
+        description: List or create account deletion requests
+        
+      detail:
+        path: /api-v1/account-delete-requests/{id}/
+        methods: [GET, PUT, PATCH, DELETE]
+        description: Get, update, or delete deletion request
+        
+      approve:
+        path: /api-v1/account-delete-requests/{id}/approve/
+        method: POST
+        description: Approve account deletion request
+        
+      reject:
+        path: /api-v1/account-delete-requests/{id}/reject/
+        method: POST
+        description: Reject account deletion request
+
+  # Chat Endpoints
+  chat:
+    chatroom_id:
+      path: /api-v1/chatroomid/
+      method: POST
+      description: Get or create chatroom ID
+      
+    chatrooms:
+      list:
+        path: /api-v1/chatrooms/
+        methods: [GET]
+        description: List all user chatrooms
+        
+      detail:
+        path: /api-v1/chatrooms/{id}/
+        methods: [GET, PUT, PATCH, DELETE]
+        description: Get, update, or delete specific chatroom
+        
+      mark_read:
+        path: /api-v1/chatrooms/{id}/mark-read/
+        method: POST
+        description: Mark chatroom messages as read
+        
+      messages:
+        path: /api-v1/chatrooms/{id}/messages/
+        methods: [GET]
+        description: Get chatroom messages
+        
+      send_message:
+        path: /api-v1/chatrooms/{id}/send/
+        method: POST
+        description: Send message to chatroom
+
+  # Feedback Endpoints
+  feedback:
+    path: /api-v1/feedback/
+    methods: [GET, POST]
+    description: Submit or list feedback
+
+  # Referral & Points Endpoints
+  referrals:
+    referrals:
+      path: /api-v1/referrals/
+      methods: [GET, POST]
+      description: Get referral information or create referral
+      
+    transactions:
+      path: /api-v1/referrals/transactions/
+      methods: [GET]
+      description: List referral transactions and points history
+      
+    redeem_coupon:
+      path: /api-v1/referrals/redeem/
+      method: POST
+      description: Redeem referral coupon code
+
+  # Static Pages Endpoints
+  static_pages:
+    privacy_policies:
+      latest:
+        path: /api-v1/privacy-policies/latest/
+        method: GET
+        description: Get latest privacy policy
+        
+      list:
+        path: /api-v1/privacy-policies/
+        method: GET
+        description: List all privacy policies
+        
+    terms_conditions:
+      latest:
+        path: /api-v1/terms-and-conditions/latest/
+        method: GET
+        description: Get latest terms and conditions
+        
+      list:
+        path: /api-v1/terms-and-conditions/
+        method: GET
+        description: List all terms and conditions versions
+      
+      # Legacy endpoint (kept for backward compatibility)
+      legacy:
+        path: /api-v1/terms-conditions/
+        method: GET
+        description: Legacy terms and conditions endpoint
+
+# Media URLs
+media:
+  base_url: https://api.oysloe.com/media/
+  products: /media/products/
+  profiles: /media/profiles/
+  
+# WebSocket Endpoints (if applicable)
+websockets:
+  chat:
+    url: wss://api.oysloe.com/ws/chat/
+    description: Real-time chat WebSocket connection
+    
+  notifications:
+    url: wss://api.oysloe.com/ws/notifications/
+    description: Real-time notifications WebSocket connection
+
+# API Configuration
+configuration:
+  version: v1
+  timeout: 30000  # milliseconds
+  retry_attempts: 3
+  pagination:
+    default_page_size: 20
+    max_page_size: 100
+  
+  headers:
+    default:
+      Content-Type: application/json
+      Accept: application/json
+    
+    authenticated:
+      Content-Type: application/json
+      Accept: application/json
+      Authorization: Bearer {token}
+
+# Response Status Codes
+status_codes:
+  success:
+    200: OK - Request succeeded
+    201: Created - Resource created successfully
+    204: No Content - Request succeeded with no content
+  
+  client_errors:
+    400: Bad Request - Invalid request data
+    401: Unauthorized - Authentication required
+    403: Forbidden - Access denied
+    404: Not Found - Resource not found
+    422: Unprocessable Entity - Validation error
+  
+  server_errors:
+    500: Internal Server Error
+    502: Bad Gateway
+    503: Service Unavailable
+
+# Usage Notes
+notes: |
+  - All authenticated endpoints require Bearer token in Authorization header
+  - Date/time fields use ISO 8601 format
+  - Pagination uses page and page_size query parameters
+  - File uploads use multipart/form-data content type
+  - IDs in path parameters are typically UUIDs or integers
+  - Search/filter parameters are available on list endpoints

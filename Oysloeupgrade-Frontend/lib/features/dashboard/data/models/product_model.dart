@@ -18,6 +18,7 @@ class ProductModel extends ProductEntity {
     required super.updatedAt,
     super.totalReports = 0,
     super.totalFavourites = 0,
+    super.isFavourite = false,
     super.location,
     super.isTaken = false,
   });
@@ -39,6 +40,8 @@ class ProductModel extends ProductEntity {
       updatedAt: DateUtilsExt.parseOrEpoch(json['updated_at'] as String?),
       totalReports: _parseInt(json['total_reports']),
       totalFavourites: _parseInt(json['total_favourites']),
+      isFavourite: json['favourited_by_user'] as bool? ?? 
+                   json['is_favourite'] as bool? ?? false,
       location: _parseLocation(json['location']),
       isTaken: json['is_taken'] as bool? ?? false,
     );
