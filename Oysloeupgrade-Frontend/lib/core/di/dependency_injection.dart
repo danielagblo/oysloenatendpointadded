@@ -44,6 +44,7 @@ import 'package:oysloe_mobile/features/dashboard/domain/repositories/dashboard_r
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_products_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_reviews_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_detail_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_user_products_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_related_products_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/create_review_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/update_review_usecase.dart';
@@ -58,6 +59,7 @@ import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_categories_
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_subcategories_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_features_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_locations_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_locations_by_region_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_alerts_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/mark_alert_read_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/delete_alert_usecase.dart';

@@ -165,6 +165,9 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<GetProductDetailUseCase>(
       () => GetProductDetailUseCase(sl()),
     )
+    ..registerLazySingleton<GetUserProductsUseCase>(
+      () => GetUserProductsUseCase(sl()),
+    )
     ..registerLazySingleton<ReportProductUseCase>(
       () => ReportProductUseCase(sl()),
     )
@@ -222,11 +225,17 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<GetLocationsUseCase>(
       () => GetLocationsUseCase(sl()),
     )
+    ..registerLazySingleton<GetLocationsByRegionUseCase>(
+      () => GetLocationsByRegionUseCase(sl()),
+    )
     ..registerLazySingleton<GetAlertsUseCase>(
       () => GetAlertsUseCase(sl()),
     )
     ..registerLazySingleton<MarkProductAsTakenUseCase>(
       () => MarkProductAsTakenUseCase(sl()),
+    )
+    ..registerLazySingleton<ConfirmMarkProductAsTakenUseCase>(
+      () => ConfirmMarkProductAsTakenUseCase(sl()),
     )
     ..registerLazySingleton<SetProductStatusUseCase>(
       () => SetProductStatusUseCase(sl()),

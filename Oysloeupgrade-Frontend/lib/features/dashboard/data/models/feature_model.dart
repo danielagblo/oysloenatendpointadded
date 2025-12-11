@@ -12,35 +12,42 @@ class FeatureModel extends FeatureEntity {
   factory FeatureModel.fromJson(Map<String, dynamic> json) {
     List<String>? options;
 
-    // Debug: Print the raw JSON to see what's coming from API
-    print('Feature JSON: $json');
-
-    if (json['options'] != null) {
-      if (json['options'] is List) {
-        options = (json['options'] as List).map((e) => e.toString()).toList();
-      } else if (json['options'] is String) {
-        // Handle comma-separated string options
-        final optionsStr = json['options'] as String;
-        if (optionsStr.trim().isNotEmpty) {
-          options = optionsStr.split(',').map((e) => e.trim()).toList();
-        }
-      }
+    // Parse options from the API - extract 'value' field from each object
+    if (json['options'] != null && json['options'] is List) {
+      options = (json['options'] as List)
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              // Extract the 'value' field from the JSON object
+              final value = item['value'];
+              return value?.toString().trim() ?? '';
+            }
+            return item.toString().trim();
+          })
+          .where((value) => value.isNotEmpty)
+          .toList();
+    } else if (json['values'] != null && json['values'] is List) {
+      options = (json['values'] as List)
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              final value = item['value'];
+              return value?.toString().trim() ?? '';
+            }
+            return item.toString().trim();
+          })
+          .where((value) => value.isNotEmpty)
+          .toList();
+    } else if (json['choices'] != null && json['choices'] is List) {
+      options = (json['choices'] as List)
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              final value = item['value'];
+              return value?.toString().trim() ?? '';
+            }
+            return item.toString().trim();
+          })
+          .where((value) => value.isNotEmpty)
+          .toList();
     }
-
-    // Check for alternative field names
-    if (options == null && json['values'] != null) {
-      if (json['values'] is List) {
-        options = (json['values'] as List).map((e) => e.toString()).toList();
-      }
-    }
-
-    if (options == null && json['choices'] != null) {
-      if (json['choices'] is List) {
-        options = (json['choices'] as List).map((e) => e.toString()).toList();
-      }
-    }
-
-    print('Feature ${json['name']} has options: $options');
 
     return FeatureModel(
       id: json['id'] as int? ?? 0,

@@ -39,24 +39,6 @@ class FeaturesRemoteDataSourceImpl implements FeaturesRemoteDataSource {
             )
             .toList();
 
-        // Fetch values for each feature
-        for (var i = 0; i < features.length; i++) {
-          try {
-            final values = await getFeatureValues(features[i].id);
-            if (values.isNotEmpty) {
-              features[i] = FeatureModel(
-                id: features[i].id,
-                name: features[i].name,
-                categoryId: features[i].categoryId,
-                description: features[i].description,
-                options: values,
-              );
-            }
-          } catch (e) {
-            print('Failed to fetch values for feature ${features[i].id}: $e');
-          }
-        }
-
         return features;
       }
 
@@ -75,16 +57,21 @@ class FeaturesRemoteDataSourceImpl implements FeaturesRemoteDataSource {
   @override
   Future<List<String>> getFeatureValues(int featureId) async {
     try {
+      print('Fetching values from: $valuesEndpoint?feature=$featureId');
       final Response<dynamic> response = await _client.get<dynamic>(
         valuesEndpoint,
         queryParameters: {'feature': featureId},
       );
+      print('Response status: ${response.statusCode}');
+      print('Response data type: ${response.data.runtimeType}');
       final dynamic data = response.data;
 
       if (data is List<dynamic>) {
+        print('Data is a list with ${data.length} items');
         final values = data
             .whereType<Map<String, dynamic>>()
             .map((item) {
+              print('Processing item: $item');
               // Extract the 'value' field from each object
               final value = item['value'];
               if (value == null) return '';
@@ -98,12 +85,16 @@ class FeaturesRemoteDataSourceImpl implements FeaturesRemoteDataSource {
         return values;
       }
 
+      print('Data is not a list, returning empty array');
       return const <String>[];
     } on DioException catch (error) {
-      print('Feature values endpoint error: ${error.message}');
+      print('Feature values DioException: ${error.message}');
+      print('Error response: ${error.response?.data}');
+      print('Error status: ${error.response?.statusCode}');
       return const <String>[];
     } catch (error) {
       print('Error fetching feature values: $error');
+      print('Error stacktrace: ${StackTrace.current}');
       return const <String>[];
     }
   }

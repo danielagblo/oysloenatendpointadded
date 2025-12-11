@@ -93,6 +93,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
       : _getProductDetailUseCase = sl<GetProductDetailUseCase>(),
         _getProductReviewsUseCase = sl<GetProductReviewsUseCase>(),
         _markProductAsTakenUseCase = sl<MarkProductAsTakenUseCase>(),
+        _confirmMarkProductAsTakenUseCase = sl<ConfirmMarkProductAsTakenUseCase>(),
         _getOrCreateChatRoomIdUseCase = sl<GetOrCreateChatRoomIdUseCase>(),
         _sendChatMessageUseCase = sl<SendChatMessageUseCase>(),
         _toggleFavouriteUseCase = sl<ToggleFavouriteUseCase>();
@@ -116,11 +117,13 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
   final GetProductDetailUseCase _getProductDetailUseCase;
   final GetProductReviewsUseCase _getProductReviewsUseCase;
   final MarkProductAsTakenUseCase _markProductAsTakenUseCase;
+  final ConfirmMarkProductAsTakenUseCase _confirmMarkProductAsTakenUseCase;
   final GetOrCreateChatRoomIdUseCase _getOrCreateChatRoomIdUseCase;
   final SendChatMessageUseCase _sendChatMessageUseCase;
   final ToggleFavouriteUseCase _toggleFavouriteUseCase;
   bool _isSendingMessage = false;
   bool _isTogglingFavourite = false;
+  bool _isConfirmingTaken = false;
 
   ProductEntity? _productOverride;
   bool _isRefreshing = false;
@@ -814,8 +817,39 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
       return;
     }
 
+    // Don't allow marking if already taken
+    if (product.isTaken) {
+      return;
+    }
+
+    // Store original product in case we need to revert
+    final ProductEntity originalProduct = product;
+
+    // Optimistically update UI immediately to show "Taken"
+    final ProductEntity optimisticProduct = ProductEntity(
+      id: product.id,
+      pid: product.pid,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      type: product.type,
+      status: product.status,
+      image: product.image,
+      images: product.images,
+      productFeatures: product.productFeatures,
+      category: product.category,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      totalReports: product.totalReports,
+      totalFavourites: product.totalFavourites,
+      isFavourite: product.isFavourite,
+      location: product.location,
+      isTaken: true, // Optimistically mark as taken
+    );
+
     setState(() {
       _isMarkingAsTaken = true;
+      _productOverride = optimisticProduct;
     });
 
     final result = await _markProductAsTakenUseCase(
@@ -825,18 +859,70 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     if (!mounted) return;
 
     result.fold(
-      (failure) => showErrorSnackBar(context, failure.message),
+      (failure) {
+        // Revert to original product on failure
+        setState(() {
+          _productOverride = originalProduct;
+        });
+        showErrorSnackBar(context, failure.message);
+      },
       (updatedProduct) {
         setState(() {
           _productOverride = updatedProduct;
         });
-        showSuccessSnackBar(context, 'Ad marked as taken');
+        showSuccessSnackBar(context, 'Seller has been notified!');
       },
     );
 
     if (!mounted) return;
     setState(() {
       _isMarkingAsTaken = false;
+    });
+  }
+
+  Future<void> _handleConfirmMarkAdAsTaken() async {
+    final ProductEntity? product = _product;
+    if (product == null || _isConfirmingTaken) {
+      if (product == null && mounted) {
+        showErrorSnackBar(
+          context,
+          'Unable to confirm this ad as taken right now.',
+        );
+      }
+      return;
+    }
+
+    // Only allow if already marked (not yet confirmed)
+    if (product.isTaken) {
+      showErrorSnackBar(context, 'This ad is already confirmed as taken');
+      return;
+    }
+
+    setState(() {
+      _isConfirmingTaken = true;
+    });
+
+    final result = await _confirmMarkProductAsTakenUseCase(
+      ConfirmMarkProductAsTakenParams(productId: product.id),
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        showErrorSnackBar(context, failure.message);
+      },
+      (updatedProduct) {
+        setState(() {
+          _productOverride = updatedProduct;
+        });
+        showSuccessSnackBar(context, 'Ad confirmed as taken');
+      },
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isConfirmingTaken = false;
     });
   }
 
@@ -1379,14 +1465,13 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                             child: Row(
                               children: [
                                 _actionChip(
-                                  label: _isAdTaken
-                                      ? 'Ad already taken'
-                                      : 'Mark Ad as taken',
+                                  label: _isAdTaken ? 'Taken' : 'Mark as taken',
                                   svgAsset: 'assets/icons/mark_as_taken.svg',
-                                  onTap:
-                                      _isAdTaken ? null : _handleMarkAdAsTaken,
-                                  enabled: !_isAdTaken,
-                                  isLoading: _isMarkingAsTaken,
+                                  onTap: _isAdTaken 
+                                      ? _handleConfirmMarkAdAsTaken 
+                                      : _handleMarkAdAsTaken,
+                                  isLoading: _isMarkingAsTaken || _isConfirmingTaken,
+                                  enabled: !_isMarkingAsTaken && !_isConfirmingTaken,
                                 ),
                                 const SizedBox(width: 12),
                                 _actionChip(

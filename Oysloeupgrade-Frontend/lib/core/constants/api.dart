@@ -25,6 +25,8 @@ class AppStrings {
   static String productDetailURL(String id) => '$apiBasePath/products/$id/';
   static String markProductAsTakenURL(String id) =>
       '$apiBasePath/products/$id/mark-as-taken/';
+  static String confirmMarkProductAsTakenURL(String id) =>
+      '$apiBasePath/products/$id/confirm-mark-as-taken/';
   static String setProductStatusURL(String id) =>
       '$apiBasePath/products/$id/set-status/';
   static String productReportURL(String id) =>

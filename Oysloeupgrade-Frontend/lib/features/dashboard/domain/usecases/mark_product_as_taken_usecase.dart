@@ -29,4 +29,25 @@ class MarkProductAsTakenUseCase
   }
 }
 
+class ConfirmMarkProductAsTakenParams extends Equatable {
+  const ConfirmMarkProductAsTakenParams({required this.productId});
 
+  final int productId;
+
+  @override
+  List<Object?> get props => <Object?>[productId];
+}
+
+class ConfirmMarkProductAsTakenUseCase
+    extends UseCase<ProductEntity, ConfirmMarkProductAsTakenParams> {
+  ConfirmMarkProductAsTakenUseCase(this._repository);
+
+  final DashboardRepository _repository;
+
+  @override
+  Future<Either<Failure, ProductEntity>> call(
+    ConfirmMarkProductAsTakenParams params,
+  ) {
+    return _repository.confirmMarkProductAsTaken(productId: params.productId);
+  }
+}

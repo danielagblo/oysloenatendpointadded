@@ -30,12 +30,44 @@ class LocationsCubit extends Cubit<LocationsState> {
           message: failure.message,
         ),
       ),
-      (locations) => emit(
-        state.copyWith(
-          status: LocationsStatus.success,
-          locations: locations,
-          resetMessage: true,
-        ),
+      (locations) {
+        // Extract unique regions
+        final regions = <String>{};
+        for (var location in locations) {
+          if (location.region != null && location.region!.isNotEmpty) {
+            regions.add(location.region!);
+          }
+        }
+
+        emit(
+          state.copyWith(
+            status: LocationsStatus.success,
+            locations: locations,
+            regions: regions.toList()..sort(),
+            resetMessage: true,
+          ),
+        );
+      },
+    );
+  }
+
+  void filterByRegion(String region) {
+    final filteredLocations =
+        state.locations.where((location) => location.region == region).toList();
+
+    emit(
+      state.copyWith(
+        subLocations: filteredLocations,
+        subLocationsStatus: LocationsStatus.success,
+      ),
+    );
+  }
+
+  void clearSubLocations() {
+    emit(
+      state.copyWith(
+        subLocationsStatus: LocationsStatus.initial,
+        subLocations: const <LocationEntity>[],
       ),
     );
   }

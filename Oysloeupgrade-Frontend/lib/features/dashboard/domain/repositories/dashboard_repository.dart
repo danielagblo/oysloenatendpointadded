@@ -20,6 +20,8 @@ abstract class DashboardRepository {
     String? ordering,
   });
 
+  Future<Either<Failure, List<ProductEntity>>> getUserProducts();
+
   Future<Either<Failure, ProductEntity>> getProductDetail({
     required int id,
   });
@@ -29,6 +31,10 @@ abstract class DashboardRepository {
   });
 
   Future<Either<Failure, ProductEntity>> markProductAsTaken({
+    required int productId,
+  });
+
+  Future<Either<Failure, ProductEntity>> confirmMarkProductAsTaken({
     required int productId,
   });
 
@@ -86,6 +92,9 @@ abstract class DashboardRepository {
   });
 
   Future<Either<Failure, List<LocationEntity>>> getLocations();
+
+  Future<Either<Failure, List<LocationEntity>>> getLocationsByRegion(
+      String region);
 
   Future<Either<Failure, List<AlertEntity>>> getAlerts();
 

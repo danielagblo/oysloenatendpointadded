@@ -9,6 +9,7 @@ import 'package:oysloe_mobile/features/dashboard/domain/usecases/create_product_
 import 'package:oysloe_mobile/features/dashboard/domain/entities/category_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/feature_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/subcategory_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/location_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_state.dart';
@@ -52,13 +53,22 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
   int? _selectedCategoryId;
   int? _selectedSubcategoryId;
   String _selectedPurpose = 'Sale';
-  String? _selectedAreaLocation;
-  String? _selectedMapLocation;
+  String? _selectedRegion; // For Ad Area Location (region name)
+  int? _selectedLocationId; // For Ad Actual Map Location (location ID)
 
   // Maps to store dynamic feature values
   Map<int, String> _selectedFeatureValues = {};
   Map<int, TextEditingController> _featureControllers = {};
   Map<int, String> _featureErrors = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch locations when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LocationsCubit>().fetch();
+    });
+  }
 
   @override
   void dispose() {
@@ -423,21 +433,36 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                 SizedBox(height: 3.h),
                 _buildPriceSection(),
                 SizedBox(height: 3.h),
+                // Ad Area Location (Regions)
                 BlocBuilder<LocationsCubit, LocationsState>(
                   builder: (context, locationsState) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AdLocationDropdown(
+                        AdDropdown(
                           labelText: 'Ad Area Location',
-                          value: _selectedAreaLocation,
-                          onChanged: (value) {
+                          hintText: 'Select region',
+                          value: _selectedRegion,
+                          items: locationsState.regions
+                              .map((region) => DropdownMenuItem<String>(
+                                    value: region,
+                                    child: Text(region),
+                                  ))
+                              .toList(),
+                          enabled: locationsState.hasRegions,
+                          onChanged: (String? value) {
+                            if (!locationsState.hasRegions) return;
                             setState(() {
-                              _selectedAreaLocation = value;
+                              _selectedRegion = value;
+                              _selectedLocationId = null;
                             });
+                            if (value != null) {
+                              context
+                                  .read<LocationsCubit>()
+                                  .filterByRegion(value);
+                            }
                           },
                         ),
-                        SizedBox(height: 2.w),
                         if (locationsState.isLoading)
                           const Padding(
                             padding: EdgeInsets.all(8.0),
@@ -449,20 +474,11 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              'Unable to load locations',
+                              'Unable to load regions',
                               style: AppTypography.bodySmall.copyWith(
                                 color: Colors.red,
                               ),
                             ),
-                          )
-                        else if (locationsState.hasData)
-                          Wrap(
-                            spacing: 2.w,
-                            runSpacing: 1.w,
-                            children: locationsState.locations
-                                .map((location) =>
-                                    _buildLocationChip(location.name))
-                                .toList(),
                           ),
                       ],
                     );
@@ -487,46 +503,44 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   ],
                 ),
                 SizedBox(height: 3.h),
+                // Ad Actual Map Location (Locations within selected region)
                 BlocBuilder<LocationsCubit, LocationsState>(
                   builder: (context, locationsState) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AdLocationDropdown(
+                        AdDropdown<int>(
                           labelText: 'Ad Actual Map Location',
-                          value: _selectedMapLocation,
-                          onChanged: (value) {
+                          hintText: _selectedRegion == null
+                              ? 'Select region first'
+                              : 'Select specific location',
+                          value: _selectedLocationId,
+                          items: locationsState.subLocations
+                              .map((loc) => DropdownMenuItem<int>(
+                                    value: loc.id,
+                                    child: Text(loc.name),
+                                  ))
+                              .toList(),
+                          enabled: _selectedRegion != null &&
+                              locationsState.hasSubLocations,
+                          onChanged: (int? value) {
+                            if (_selectedRegion == null ||
+                                !locationsState.hasSubLocations) return;
                             setState(() {
-                              _selectedMapLocation = value;
+                              _selectedLocationId = value;
                             });
                           },
                         ),
-                        SizedBox(height: 2.w),
-                        if (locationsState.isLoading)
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        else if (locationsState.hasError)
+                        if (_selectedRegion != null &&
+                            !locationsState.hasSubLocations)
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              'Unable to load locations',
+                              'No locations available for selected region',
                               style: AppTypography.bodySmall.copyWith(
-                                color: Colors.red,
+                                color: AppColors.gray8B959E,
                               ),
                             ),
-                          )
-                        else if (locationsState.hasData)
-                          Wrap(
-                            spacing: 2.w,
-                            runSpacing: 1.w,
-                            children: locationsState.locations
-                                .map((location) =>
-                                    _buildLocationChip(location.name))
-                                .toList(),
                           ),
                       ],
                     );
@@ -588,6 +602,12 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                           ),
                         ),
                       );
+                    }
+
+                    // Debug: Check what features have
+                    for (var feature in featuresState.features) {
+                      print(
+                          'Feature: ${feature.name}, Options: ${feature.options}');
                     }
 
                     return Column(
@@ -833,110 +853,182 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
 
   void _showFeatureOptionsBottomSheet(
       FeatureEntity feature, TextEditingController controller) {
+    final searchController = TextEditingController();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.blueGray374957
-                : AppColors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.gray8B959E.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            // Filter options based on search
+            final filteredOptions = feature.options!.where((option) {
+              return option
+                  .toLowerCase()
+                  .contains(searchController.text.toLowerCase());
+            }).toList();
+
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.blueGray374957
+                    : AppColors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
               ),
-              SizedBox(height: 2.h),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2.w),
-                child: Text(
-                  'Select ${feature.name}',
-                  style: AppTypography.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18.sp,
-                  ),
-                ),
+              padding: EdgeInsets.only(
+                top: 1.h,
+                left: 4.w,
+                right: 4.w,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              SizedBox(height: 2.h),
-              // Options list
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: 50.h,
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: feature.options!.length,
-                  itemBuilder: (context, index) {
-                    final option = feature.options![index];
-                    final isSelected = controller.text == option;
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          controller.text = option;
-                          _selectedFeatureValues[feature.id] = option;
-                          _featureErrors.remove(feature.id);
-                        });
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 4.w, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary.withOpacity(0.1)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: EdgeInsets.only(bottom: 2.h),
+                      decoration: BoxDecoration(
+                        color: AppColors.gray8B959E.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  // Title
+                  Text(
+                    'Select ${feature.name}',
+                    style: AppTypography.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18.sp,
+                      color: AppColors.blueGray374957,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  // Search field
+                  if (feature.options!.length > 5)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 2.h),
+                      decoration: BoxDecoration(
+                        color: AppColors.grayF9,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: (value) => setModalState(() {}),
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          hintStyle: AppTypography.body.copyWith(
+                            color: AppColors.gray8B959E,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: AppColors.gray8B959E,
+                          ),
+                          suffixIcon: searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    setModalState(() {});
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 4.w,
+                            vertical: 1.5.h,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
+                      ),
+                    ),
+                  // Options list
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: 50.h,
+                    ),
+                    child: filteredOptions.isEmpty
+                        ? Padding(
+                            padding: EdgeInsets.symmetric(vertical: 3.h),
+                            child: Center(
                               child: Text(
-                                option,
+                                'No options found',
                                 style: AppTypography.body.copyWith(
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                  color: isSelected
-                                      ? AppColors.blueGray374957
-                                      : null,
+                                  color: AppColors.gray8B959E,
                                 ),
                               ),
                             ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle,
-                                color: AppColors.primary,
-                                size: 20,
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: filteredOptions.length,
+                            separatorBuilder: (context, index) => Divider(
+                              height: 1,
+                              color: AppColors.grayD9.withOpacity(0.3),
+                            ),
+                            itemBuilder: (context, index) {
+                              final option = filteredOptions[index];
+                              final isSelected = controller.text == option;
+                              return InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    controller.text = option;
+                                    _selectedFeatureValues[feature.id] = option;
+                                    _featureErrors.remove(feature.id);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 3.w,
+                                    vertical: 1.8.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.primary.withOpacity(0.08)
+                                        : Colors.transparent,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          option,
+                                          style: AppTypography.body.copyWith(
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                            color: isSelected
+                                                ? AppColors.primary
+                                                : AppColors.blueGray374957,
+                                            fontSize: 15.sp,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: AppColors.primary,
+                                          size: 22,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  SizedBox(height: 2.h),
+                ],
               ),
-              SizedBox(height: 2.h),
-            ],
-          ),
+            );
+          },
         );
       },
     );

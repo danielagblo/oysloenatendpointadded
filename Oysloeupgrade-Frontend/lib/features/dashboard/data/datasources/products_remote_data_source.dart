@@ -22,6 +22,10 @@ abstract class ProductsRemoteDataSource {
     required int productId,
   });
 
+  Future<ProductModel> confirmMarkProductAsTaken({
+    required int productId,
+  });
+
   Future<ProductModel> setProductStatus({
     required int productId,
     required String status,
@@ -142,7 +146,26 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     try {
       final Response<dynamic> response = await _client.post<dynamic>(
         AppStrings.markProductAsTakenURL(productId.toString()),
-        data: const <String, dynamic>{},
+        data: <String, dynamic>{
+          'product': productId,
+        },
+      );
+      return _parseProduct(response.data);
+    } on DioException catch (error) {
+      throw ApiException(ApiHelper.getHumanReadableMessage(error));
+    } catch (error) {
+      throw ServerException(error.toString());
+    }
+  }
+
+  @override
+  Future<ProductModel> confirmMarkProductAsTaken({
+    required int productId,
+  }) async {
+    try {
+      final Response<dynamic> response = await _client.post<dynamic>(
+        AppStrings.confirmMarkProductAsTakenURL(productId.toString()),
+        data: <String, dynamic>{},
       );
       return _parseProduct(response.data);
     } on DioException catch (error) {

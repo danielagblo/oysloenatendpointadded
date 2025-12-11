@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
+import 'package:oysloe_mobile/core/common/widgets/app_snackbar.dart';
+import 'package:oysloe_mobile/core/constants/api.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
+import 'package:oysloe_mobile/core/routes/routes.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
+import 'package:oysloe_mobile/core/usecase/usecase.dart';
+import 'package:oysloe_mobile/core/utils/formatters.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/product_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_user_products_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/delete_product_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/set_product_status_usecase.dart';
 
 class AdScreen extends StatefulWidget {
   const AdScreen({super.key});
@@ -16,29 +27,16 @@ class _AdScreenState extends State<AdScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? _expandedAdId;
-
-  final List<AdItem> _activeAds = [
-    AdItem(
-      id: '1',
-      title: 'Mercedes Benz S CLASS 2023',
-      price: '₵ 023,000',
-      imageUrl: 'assets/images/ad1.jpg',
-      clicks: 20,
-      impressions: 2000,
-    ),
-    AdItem(
-      id: '2',
-      title: 'Mercedes Benz S CLASS 2023',
-      price: '₵ 023,000',
-      imageUrl: 'assets/images/ad2.jpg',
-      clicks: 20,
-      impressions: 2000,
-    ),
-  ];
-
-  final List<AdItem> _pendingAds = [];
-  final List<AdItem> _takenAds = [];
-  final List<AdItem> _suspendedAds = [];
+  List<ProductEntity> _allProducts = [];
+  bool _isLoading = true;
+  String? _error;
+  
+  final GetUserProductsUseCase _getUserProductsUseCase =
+      sl<GetUserProductsUseCase>();
+  final DeleteProductUseCase _deleteProductUseCase =
+      sl<DeleteProductUseCase>();
+  final SetProductStatusUseCase _setProductStatusUseCase =
+      sl<SetProductStatusUseCase>();
 
   @override
   void initState() {
@@ -51,6 +49,7 @@ class _AdScreenState extends State<AdScreen>
         });
       }
     });
+    _loadUserProducts();
   }
 
   @override
@@ -59,40 +58,156 @@ class _AdScreenState extends State<AdScreen>
     super.dispose();
   }
 
+  Future<void> _loadUserProducts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final result = await _getUserProductsUseCase(const NoParams());
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        setState(() {
+          _error = failure.message.isEmpty
+              ? 'Unable to load your ads'
+              : failure.message;
+          _isLoading = false;
+        });
+      },
+      (products) {
+        setState(() {
+          _allProducts = products;
+          _isLoading = false;
+        });
+      },
+    );
+  }
+
+  List<ProductEntity> _filterProductsByTab(int tabIndex) {
+    switch (tabIndex) {
+      case 0: // Active
+        return _allProducts
+            .where((p) => 
+                p.status.toLowerCase() == 'active' && !p.isTaken)
+            .toList();
+      case 1: // Pending
+        return _allProducts
+            .where((p) => p.status.toLowerCase() == 'pending')
+            .toList();
+      case 2: // Taken
+        return _allProducts.where((p) => p.isTaken).toList();
+      case 3: // Suspended
+        return _allProducts
+            .where((p) => p.status.toLowerCase() == 'suspended')
+            .toList();
+      default:
+        return [];
+    }
+  }
+
   void _toggleAdMenu(String adId) {
     setState(() {
       _expandedAdId = _expandedAdId == adId ? null : adId;
     });
   }
 
-  void _handleMenuAction(String action, AdItem ad) {
+  void _handleMenuAction(String action, ProductEntity product) {
     setState(() {
       _expandedAdId = null;
     });
 
     switch (action) {
       case 'taken':
-        _markAsTaken(ad);
+        _navigateToAdDetail(product);
         break;
       case 'delete':
-        _deleteAd(ad);
+        _confirmAndDeleteAd(product);
         break;
       case 'suspend':
-        _suspendAd(ad);
+        _suspendAd(product);
         break;
     }
   }
 
-  void _markAsTaken(AdItem ad) {
-    debugPrint('Marking ad ${ad.id} as taken');
+  Future<void> _confirmAndDeleteAd(ProductEntity product) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Ad'),
+        content: Text('Are you sure you want to delete "${product.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final result = await _deleteProductUseCase(
+      DeleteProductParams(productId: product.id),
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => showErrorSnackBar(
+        context,
+        failure.message.isEmpty ? 'Unable to delete ad' : failure.message,
+      ),
+      (_) {
+        setState(() {
+          _allProducts.removeWhere((p) => p.id == product.id);
+        });
+        showSuccessSnackBar(context, 'Ad deleted successfully');
+      },
+    );
   }
 
-  void _deleteAd(AdItem ad) {
-    debugPrint('Deleting ad ${ad.id}');
+  Future<void> _suspendAd(ProductEntity product) async {
+    final result = await _setProductStatusUseCase(
+      SetProductStatusParams(productId: product.id, status: 'suspended'),
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => showErrorSnackBar(
+        context,
+        failure.message.isEmpty ? 'Unable to suspend ad' : failure.message,
+      ),
+      (updatedProduct) {
+        setState(() {
+          final index = _allProducts.indexWhere((p) => p.id == product.id);
+          if (index >= 0) {
+            _allProducts[index] = updatedProduct;
+          }
+        });
+        showSuccessSnackBar(context, 'Ad suspended successfully');
+      },
+    );
   }
 
-  void _suspendAd(AdItem ad) {
-    debugPrint('Suspending ad ${ad.id}');
+  void _navigateToAdDetail(ProductEntity product) {
+    context.pushNamed(
+      AppRouteNames.dashboardHomeAdDetail,
+      pathParameters: <String, String>{
+        'adId': product.pid.isNotEmpty ? product.pid : product.id.toString(),
+      },
+      extra: <String, dynamic>{
+        'product': product,
+      },
+    );
   }
 
   @override
@@ -109,79 +224,113 @@ class _AdScreenState extends State<AdScreen>
           backgroundColor: AppColors.white,
           title: 'Ads',
         ),
-        body: Column(
-          children: [
-            SizedBox(height: 0.6.h),
-            Container(
-              color: AppColors.white,
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-              child: _CustomTabBar(
-                controller: _tabController,
-                tabs: const ['Active', 'Pending', 'Taken', 'Suspended'],
-                icons: const [
-                  'assets/icons/active.svg',
-                  'assets/icons/pending.svg',
-                  'assets/icons/sold.svg',
-                  'assets/icons/suspend.svg',
-                ],
-              ),
-            ),
-
-            // Tab Content
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildAdList(_activeAds, 'Active'),
-                  _buildAdList(_pendingAds, 'Pending'),
-                  _buildAdList(_takenAds, 'Taken'),
-                  _buildAdList(_suspendedAds, 'Suspended'),
-                ],
-              ),
-            ),
-          ],
-        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _buildErrorState()
+                : Column(
+                    children: [
+                      SizedBox(height: 0.6.h),
+                      Container(
+                        color: AppColors.white,
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                        child: _CustomTabBar(
+                          controller: _tabController,
+                          tabs: const ['Active', 'Pending', 'Taken', 'Suspended'],
+                          icons: const [
+                            'assets/icons/active.svg',
+                            'assets/icons/pending.svg',
+                            'assets/icons/sold.svg',
+                            'assets/icons/suspend.svg',
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildAdList(0),
+                            _buildAdList(1),
+                            _buildAdList(2),
+                            _buildAdList(3),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
       ),
     );
   }
 
-  Widget _buildAdList(List<AdItem> ads, String type) {
-    if (ads.isEmpty) {
-      return _buildEmptyState(type);
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            _error!,
+            style: AppTypography.body.copyWith(
+              color: AppColors.blueGray374957,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 2.h),
+          ElevatedButton(
+            onPressed: _loadUserProducts,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdList(int tabIndex) {
+    final products = _filterProductsByTab(tabIndex);
+    final tabNames = ['Active', 'Pending', 'Taken', 'Suspended'];
+
+    if (products.isEmpty) {
+      return _buildEmptyState(tabNames[tabIndex]);
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.only(top: 0.6.h),
-      itemCount: ads.length,
-      itemBuilder: (context, index) {
-        final ad = ads[index];
-        final isExpanded = _expandedAdId == ad.id;
+    return RefreshIndicator(
+      color: AppColors.blueGray374957,
+      onRefresh: _loadUserProducts,
+      child: ListView.builder(
+        padding: EdgeInsets.only(top: 0.6.h),
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          final product = products[index];
+          final isExpanded = _expandedAdId == product.id.toString();
 
-        return AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child: Column(
-            children: [
-              _AdCard(
-                ad: ad,
-                isMenuExpanded: isExpanded,
-                onMenuTap: () => _toggleAdMenu(ad.id),
-                onCloseTap: () => setState(() => _expandedAdId = null),
-              ),
-              if (isExpanded)
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: isExpanded ? 1.0 : 0.0,
-                  child: _HorizontalDropdownMenu(
-                    onMarkAsTaken: () => _handleMenuAction('taken', ad),
-                    onDelete: () => _handleMenuAction('delete', ad),
-                    onSuspend: () => _handleMenuAction('suspend', ad),
-                  ),
+          return AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: Column(
+              children: [
+                _AdCard(
+                  product: product,
+                  isMenuExpanded: isExpanded,
+                  onMenuTap: () => _toggleAdMenu(product.id.toString()),
+                  onCloseTap: () => setState(() => _expandedAdId = null),
+                  onCardTap: () => _navigateToAdDetail(product),
                 ),
-            ],
-          ),
-        );
-      },
+                if (isExpanded)
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: isExpanded ? 1.0 : 0.0,
+                    child: _HorizontalDropdownMenu(
+                      onMarkAsTaken: () => _handleMenuAction('taken', product),
+                      onDelete: () => _handleMenuAction('delete', product),
+                      onSuspend: () => _handleMenuAction('suspend', product),
+                      isTaken: product.isTaken,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -264,142 +413,158 @@ class _CustomTabBar extends StatelessWidget {
 }
 
 class _AdCard extends StatelessWidget {
-  final AdItem ad;
+  final ProductEntity product;
   final bool isMenuExpanded;
   final VoidCallback onMenuTap;
   final VoidCallback onCloseTap;
+  final VoidCallback onCardTap;
 
   const _AdCard({
-    required this.ad,
+    required this.product,
     required this.isMenuExpanded,
     required this.onMenuTap,
     required this.onCloseTap,
+    required this.onCardTap,
   });
+
+  String _normalizeImageUrl(String? raw) {
+    if (raw == null) return '';
+    final String trimmed = raw.trim();
+    if (trimmed.isEmpty) return '';
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+
+    try {
+      final Uri baseUri = Uri.parse(AppStrings.baseUrl);
+      final String origin = '${baseUri.scheme}://${baseUri.host}';
+      return trimmed.startsWith('/') ? '$origin$trimmed' : '$origin/$trimmed';
+    } catch (e) {
+      return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 0.6.h),
-      padding: EdgeInsets.all(3.w),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          // Ad Image
-          Container(
-            width: 80,
-            height: 70,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: AppColors.grayD9.withValues(alpha: 0.3),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                ad.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: AppColors.grayD9.withValues(alpha: 0.3),
-                    child: Icon(
-                      Icons.image,
-                      color: AppColors.blueGray374957.withValues(alpha: 0.5),
-                    ),
-                  );
-                },
+    final imageUrl = _normalizeImageUrl(
+      product.image.isNotEmpty
+          ? product.image
+          : (product.images.isNotEmpty ? product.images.first : ''),
+    );
+    final price = CurrencyFormatter.ghana.formatRaw(product.price);
+
+    return GestureDetector(
+      onTap: onCardTap,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 0.6.h),
+        padding: EdgeInsets.all(3.w),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 80,
+              height: 70,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: AppColors.grayD9.withValues(alpha: 0.3),
               ),
-            ),
-          ),
-
-          SizedBox(width: 3.w),
-
-          // Ad Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Stats Row with tilde
-                Row(
-                  children: [
-                    Text(
-                      '~ ${ad.clicks} clicks',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.blueGray374957,
-                        fontSize: 12.sp,
+              child: imageUrl.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildImagePlaceholder();
+                        },
                       ),
-                    ),
-                    SizedBox(width: 3.w),
-                    Text(
-                      '~ ${_formatImpressions(ad.impressions)} impressions',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.blueGray374957,
-                        fontSize: 12.sp,
+                    )
+                  : _buildImagePlaceholder(),
+            ),
+            SizedBox(width: 3.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '~ ${product.totalReports} reports',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.blueGray374957,
+                          fontSize: 12.sp,
+                        ),
                       ),
+                      SizedBox(width: 3.w),
+                      Text(
+                        '~ ${product.totalFavourites} favorites',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.blueGray374957,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 0.5.h),
+                  Text(
+                    product.name,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blueGray374957,
+                      fontSize: 14.sp,
                     ),
-                  ],
-                ),
-
-                SizedBox(height: 0.5.h),
-
-                // Title
-                Text(
-                  ad.title,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blueGray374957,
-                    fontSize: 14.sp,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                SizedBox(height: 0.5.h),
-
-                // Price
-                Text(
-                  ad.price,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blueGray374957,
-                    fontSize: 14.sp,
+                  SizedBox(height: 0.5.h),
+                  Text(
+                    price,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blueGray374957,
+                      fontSize: 14.sp,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          // Menu Button
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.grayF9,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: isMenuExpanded ? onCloseTap : onMenuTap,
-              icon: Icon(
-                isMenuExpanded ? Icons.close : Icons.more_vert,
-                color: AppColors.blueGray374957,
-                size: 19,
-              ),
-              style: IconButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(25, 25),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.grayF9,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: isMenuExpanded ? onCloseTap : onMenuTap,
+                icon: Icon(
+                  isMenuExpanded ? Icons.close : Icons.more_vert,
+                  color: AppColors.blueGray374957,
+                  size: 19,
+                ),
+                style: IconButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(25, 25),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  String _formatImpressions(int impressions) {
-    if (impressions >= 1000) {
-      return '${(impressions / 1000).toStringAsFixed(impressions % 1000 == 0 ? 0 : 1)}k';
-    }
-    return impressions.toString();
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: AppColors.grayD9.withValues(alpha: 0.3),
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        color: AppColors.blueGray374957.withValues(alpha: 0.5),
+      ),
+    );
   }
 }
 
@@ -407,11 +572,13 @@ class _HorizontalDropdownMenu extends StatelessWidget {
   final VoidCallback onMarkAsTaken;
   final VoidCallback onDelete;
   final VoidCallback onSuspend;
+  final bool isTaken;
 
   const _HorizontalDropdownMenu({
     required this.onMarkAsTaken,
     required this.onDelete,
     required this.onSuspend,
+    this.isTaken = false,
   });
 
   @override
@@ -428,7 +595,7 @@ class _HorizontalDropdownMenu extends StatelessWidget {
         children: [
           Expanded(
             child: _MenuButton(
-              text: 'Mark as taken',
+              text: isTaken ? 'View ad' : 'Mark as taken',
               onTap: onMarkAsTaken,
             ),
           ),
@@ -478,22 +645,4 @@ class _MenuButton extends StatelessWidget {
       ),
     );
   }
-}
-
-class AdItem {
-  final String id;
-  final String title;
-  final String price;
-  final String imageUrl;
-  final int clicks;
-  final int impressions;
-
-  AdItem({
-    required this.id,
-    required this.title,
-    required this.price,
-    required this.imageUrl,
-    required this.clicks,
-    required this.impressions,
-  });
 }

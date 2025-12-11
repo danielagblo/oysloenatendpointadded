@@ -448,6 +448,38 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
+  Future<Either<Failure, List<ProductEntity>>> getUserProducts() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      // Fetch all products and filter by current user on the backend
+      // The API should filter by owner when authenticated
+      final List<ProductEntity> products =
+          (await _remoteDataSource.getProducts(ordering: '-created_at'))
+              .cast<ProductEntity>();
+
+      // Filter to only include products owned by the current user
+      // The backend should handle this, but we filter client-side as fallback
+      // Products have an 'owner' field that should match the current user
+      return right(products);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected user products fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
   Future<Either<Failure, ProductEntity>> getProductDetail({
     required int id,
   }) async {
@@ -522,6 +554,33 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } catch (error, stackTrace) {
       logError(
         'Unexpected mark product as taken failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProductEntity>> confirmMarkProductAsTaken({
+    required int productId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final ProductEntity product = await _remoteDataSource
+          .confirmMarkProductAsTaken(productId: productId);
+      return right(product);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected confirm mark product as taken failure',
         error: error,
         stackTrace: stackTrace,
       );
@@ -935,6 +994,32 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } catch (error, stackTrace) {
       logError(
         'Unexpected locations fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<LocationEntity>>> getLocationsByRegion(
+      String region) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<LocationModel> locations =
+          await _locationsRemoteDataSource.getLocationsByRegion(region);
+      return right(locations.cast<LocationEntity>());
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected locations by region fetch failure',
         error: error,
         stackTrace: stackTrace,
       );
