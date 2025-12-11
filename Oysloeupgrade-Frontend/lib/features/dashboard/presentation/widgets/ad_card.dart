@@ -225,7 +225,7 @@ class AdCard extends StatelessWidget {
         // Invalid URL, show error widget
         return _buildErrorWidget();
       }
-      
+
       return Image.network(
         uri.toString(),
         fit: BoxFit.cover,

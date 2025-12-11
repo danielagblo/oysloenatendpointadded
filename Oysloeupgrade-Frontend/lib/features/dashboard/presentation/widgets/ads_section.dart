@@ -147,7 +147,7 @@ class AdsSection extends StatelessWidget {
 
       return true;
     }).toList();
-    
+
     // Maintain multiplier sort order after applying user filters
     userFilteredProducts.sort((a, b) => b.multiplier.compareTo(a.multiplier));
     return userFilteredProducts;
