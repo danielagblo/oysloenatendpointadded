@@ -47,12 +47,14 @@ class AdsSection extends StatelessWidget {
                 state.products,
                 categoriesState.categories,
               );
-              
+
               // Show filtered empty state if filters are active and no results
-              if (activeFilters != null && filteredProducts.isEmpty && onClearFilters != null) {
+              if (activeFilters != null &&
+                  filteredProducts.isEmpty &&
+                  onClearFilters != null) {
                 return FilteredEmptyState(onClearFilters: onClearFilters!);
               }
-              
+
               return _ProductsGrid(products: filteredProducts);
             }
 
@@ -78,24 +80,30 @@ class AdsSection extends StatelessWidget {
     List<ProductEntity> products,
     List<CategoryEntity> categories,
   ) {
-    if (activeFilters == null) return products;
+    // First, filter to only show active products (not pending, taken, or suspended)
+    var filteredProducts = products.where((product) {
+      return product.status.toLowerCase() == 'active' && !product.isTaken;
+    }).toList();
 
-    return products.where((product) {
+    if (activeFilters == null) return filteredProducts;
+
+    return filteredProducts.where((product) {
       // Filter by category
       final selectedCategory = activeFilters!['category'] as String?;
-      final selectedSubcategories = activeFilters!['subcategories'] as List<String>?;
-      
+      final selectedSubcategories =
+          activeFilters!['subcategories'] as List<String>?;
+
       if (selectedCategory != null) {
         // Find the category ID from the category name
         final category = categories.firstWhere(
           (cat) => cat.name.toLowerCase() == selectedCategory.toLowerCase(),
           orElse: () => const CategoryEntity(id: -1, name: ''),
         );
-        
+
         if (category.id != -1 && product.category != category.id) {
           return false;
         }
-        
+
         // If subcategories are selected (for Electronics), filter by those
         if (selectedSubcategories != null && selectedSubcategories.isNotEmpty) {
           // Check if product's subcategory is in the selected list
@@ -106,7 +114,7 @@ class AdsSection extends StatelessWidget {
 
       // Filter by location/areas
       final selectedAreas = activeFilters!['areas'] as List<String>?;
-      
+
       if (selectedAreas != null && selectedAreas.isNotEmpty) {
         // Check if product location matches any of the selected areas
         final productLocation = product.location?.label?.toLowerCase() ?? '';
@@ -133,7 +141,7 @@ class AdsSection extends StatelessWidget {
       }
 
       // Add more filter logic as needed for other filters
-      
+
       return true;
     }).toList();
   }
@@ -183,7 +191,7 @@ class AdsSection extends StatelessWidget {
     if (url.isEmpty) {
       return '';
     }
-    
+
     // Already a full URL (http or https) - case insensitive check
     final String lowerUrl = url.toLowerCase();
     if (lowerUrl.startsWith('http://') || lowerUrl.startsWith('https://')) {
@@ -193,13 +201,13 @@ class AdsSection extends StatelessWidget {
     // Parse base URL to get scheme and host
     final Uri baseUri = Uri.parse(AppStrings.baseUrl);
     final String origin = '${baseUri.scheme}://${baseUri.host}';
-    
+
     // Handle absolute paths (starting with /)
     // e.g., /media/products/image.jpg -> https://api.oysloe.com/media/products/image.jpg
     if (url.startsWith('/')) {
       return '$origin$url';
     }
-    
+
     // Handle relative paths without leading slash
     // e.g., media/products/image.jpg -> https://api.oysloe.com/media/products/image.jpg
     // Most Django REST APIs serve media from /media/ path

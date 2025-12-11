@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constants/api.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -397,13 +399,72 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
         'category': category,
         if (duration != null && duration.isNotEmpty) 'duration': duration,
         if (status != null && status.isNotEmpty) 'status': status,
-        if (images != null && images.isNotEmpty) 'images': images,
       };
 
+      final FormData formData = FormData.fromMap(data);
+
+      // Add images as multipart files
+      if (images != null && images.isNotEmpty) {
+        print('📸 Preparing to upload ${images.length} images');
+        for (int i = 0; i < images.length; i++) {
+          final String imagePath = images[i];
+          if (imagePath.isEmpty) continue;
+
+          try {
+            if (kIsWeb) {
+              final XFile xfile = XFile(imagePath);
+              final List<int> bytes = await xfile.readAsBytes();
+              String filename = xfile.name;
+              if (filename.isEmpty) {
+                final Uri uri = Uri.parse(imagePath);
+                filename = uri.pathSegments.isNotEmpty
+                    ? uri.pathSegments.last
+                    : 'product_image_$i.jpg';
+              }
+              if (!filename.contains('.')) {
+                filename = '$filename.jpg';
+              }
+              print('📸 Adding image $i: $filename (${bytes.length} bytes)');
+              formData.files.add(
+                MapEntry(
+                  'image',
+                  MultipartFile.fromBytes(
+                    bytes,
+                    filename: filename,
+                  ),
+                ),
+              );
+            } else {
+              final String filename = imagePath.split(RegExp(r'[\/\\]')).last;
+              print('📸 Adding image $i: $filename');
+              formData.files.add(
+                MapEntry(
+                  'image',
+                  await MultipartFile.fromFile(
+                    imagePath,
+                    filename:
+                        filename.isEmpty ? 'product_image_$i.jpg' : filename,
+                  ),
+                ),
+              );
+            }
+          } catch (error) {
+            // Log the error but continue with other images
+            print('❌ Failed to attach image $i: $error');
+            // Rethrow to ensure the error is visible
+            throw ApiException(
+                'Failed to attach image ${i + 1}: ${error.toString()}');
+          }
+        }
+        print('📸 Total images added to FormData: ${formData.files.length}');
+      }
+
+      print('📤 Sending product creation request to $endpoint');
       final Response<dynamic> response = await _client.post<dynamic>(
         endpoint,
-        data: data,
+        data: formData,
       );
+      print('✅ Product created successfully. Response: ${response.statusCode}');
 
       return _parseProduct(response.data);
     } on DioException catch (error) {

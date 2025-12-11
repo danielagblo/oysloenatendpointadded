@@ -244,6 +244,7 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
             const SnackBar(
               content: Text(
                   'Ad submitted for review! You can view it in the Pending tab.'),
+              duration: Duration(seconds: 2),
             ),
           );
           // Navigate to Ad Screen with Pending tab selected (index 1)
@@ -254,7 +255,11 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
           );
         } else if (state.status == ProductsStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message ?? 'Failed to post ad.')),
+            SnackBar(
+              content: Text(state.message ?? 'Failed to post ad.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
           );
         }
       },
@@ -638,10 +643,16 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   maxLength: 500,
                 ),
                 SizedBox(height: 6.w),
-                CustomButton.filled(
-                    label: 'Finish',
-                    backgroundColor: AppColors.white,
-                    onPressed: _handleFinish),
+                BlocBuilder<ProductsCubit, ProductsState>(
+                  builder: (context, state) {
+                    final isSubmitting = state.status == ProductsStatus.loading;
+                    return CustomButton.filled(
+                      label: isSubmitting ? 'Submitting...' : 'Finish',
+                      backgroundColor: AppColors.white,
+                      onPressed: isSubmitting ? null : _handleFinish,
+                    );
+                  },
+                ),
                 SizedBox(height: 3.h),
               ],
             ),
