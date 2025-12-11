@@ -25,6 +25,7 @@ class ProductEntity extends Equatable {
     this.sellerVerified,
     this.sellerBusinessName,
     this.sellerId,
+    this.multiplier = 1,
   });
 
   final int id;
@@ -50,6 +51,7 @@ class ProductEntity extends Equatable {
   final bool? sellerVerified;
   final String? sellerBusinessName;
   final int? sellerId;
+  final int multiplier;
 
   @override
   List<Object?> get props => <Object?>[
@@ -76,6 +78,7 @@ class ProductEntity extends Equatable {
         sellerVerified,
         sellerBusinessName,
         sellerId,
+        multiplier,
       ];
 }
 

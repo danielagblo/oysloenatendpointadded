@@ -293,6 +293,38 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
               return _buildImageItem(images[index]);
             },
           ),
+          // Multiplier badge
+          if (_product != null && _product!.multiplier > 1)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 12.sp,
+                  vertical: 6.sp,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'x${_product!.multiplier}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
           if (images.length > 1 && _currentImageIndex > 0)
             Positioned(
               left: 8,

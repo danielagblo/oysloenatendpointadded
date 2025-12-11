@@ -85,9 +85,12 @@ class AdsSection extends StatelessWidget {
       return product.status.toLowerCase() == 'active' && !product.isTaken;
     }).toList();
 
+    // Sort by multiplier (highest first) - ads with higher package subscriptions show first
+    filteredProducts.sort((a, b) => b.multiplier.compareTo(a.multiplier));
+
     if (activeFilters == null) return filteredProducts;
 
-    return filteredProducts.where((product) {
+    final userFilteredProducts = filteredProducts.where((product) {
       // Filter by category
       final selectedCategory = activeFilters!['category'] as String?;
       final selectedSubcategories =
@@ -144,6 +147,10 @@ class AdsSection extends StatelessWidget {
 
       return true;
     }).toList();
+    
+    // Maintain multiplier sort order after applying user filters
+    userFilteredProducts.sort((a, b) => b.multiplier.compareTo(a.multiplier));
+    return userFilteredProducts;
   }
 
   static String _resolveImage(ProductEntity product) {
@@ -375,6 +382,7 @@ class _ProductsGrid extends StatelessWidget {
                 location: location,
                 prices: prices,
                 type: AdsSection._resolveDealType(product),
+                multiplier: product.multiplier,
               ),
             );
           },

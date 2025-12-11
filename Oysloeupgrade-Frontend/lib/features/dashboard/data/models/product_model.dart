@@ -26,6 +26,7 @@ class ProductModel extends ProductEntity {
     super.sellerVerified,
     super.sellerBusinessName,
     super.sellerId,
+    super.multiplier = 1,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +56,7 @@ class ProductModel extends ProductEntity {
       sellerVerified: _parseSellerVerified(json),
       sellerBusinessName: _parseSellerBusinessName(json),
       sellerId: _parseSellerId(json),
+      multiplier: _parseMultiplier(json),
     );
   }
 
@@ -226,5 +228,32 @@ class ProductModel extends ProductEntity {
     if (seller == null) return null;
     return _parseNullableInt(
         seller['id'] ?? seller['user_id'] ?? seller['userId']);
+  }
+
+  static int _parseMultiplier(Map<String, dynamic> json) {
+    final Map<String, dynamic>? seller = _extractSeller(json);
+    if (seller == null) return 1;
+    
+    // Try to get multiplier from seller's subscription/package
+    final dynamic multiplierValue = seller['multiplier'] ?? 
+        seller['subscription_multiplier'] ?? 
+        seller['package_multiplier'];
+    
+    if (multiplierValue is int) return multiplierValue > 0 ? multiplierValue : 1;
+    if (multiplierValue is String) {
+      return int.tryParse(multiplierValue) ?? 1;
+    }
+    
+    // Check if there's a subscription/package object
+    final dynamic subscription = seller['subscription'] ?? seller['package'];
+    if (subscription is Map<String, dynamic>) {
+      final dynamic subMultiplier = subscription['multiplier'];
+      if (subMultiplier is int) return subMultiplier > 0 ? subMultiplier : 1;
+      if (subMultiplier is String) {
+        return int.tryParse(subMultiplier) ?? 1;
+      }
+    }
+    
+    return 1;
   }
 }

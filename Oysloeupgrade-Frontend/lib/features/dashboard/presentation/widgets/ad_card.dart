@@ -16,6 +16,7 @@ class AdCard extends StatelessWidget {
     required this.location,
     required this.prices,
     this.type = AdDealType.sale,
+    this.multiplier = 1,
     this.onTap,
   });
 
@@ -24,6 +25,7 @@ class AdCard extends StatelessWidget {
   final String location;
   final List<String> prices;
   final AdDealType type;
+  final int multiplier;
   final VoidCallback? onTap;
 
   @override
@@ -57,7 +59,42 @@ class AdCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         clipBehavior: Clip.antiAlias,
-        child: _buildImage(imageUrl),
+        child: Stack(
+          children: [
+            _buildImage(imageUrl),
+            if (multiplier > 1)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8.sp,
+                    vertical: 4.sp,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    'x$multiplier',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
