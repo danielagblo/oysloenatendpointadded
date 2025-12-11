@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -336,13 +337,13 @@ class _AvatarAndLogoRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _UploadCircle(
-          label: hasProfileImage ? 'Replace' : 'Profile image',
+          label: 'Profile image',
           file: profileFile,
           imageUrl: profileUrl,
           onTap: () => onSelect(_UploadTarget.profile),
         ),
         _UploadCircle(
-          label: hasBusinessLogo ? 'Replace' : 'Business logo',
+          label: 'Business logo',
           file: businessFile,
           imageUrl: businessUrl,
           onTap: () => onSelect(_UploadTarget.businessLogo),
@@ -369,12 +370,19 @@ class _UploadCircle extends StatelessWidget {
     Widget content;
     if (file != null) {
       content = ClipOval(
-        child: Image.file(
-          file!,
-          width: 65,
-          height: 65,
-          fit: BoxFit.cover,
-        ),
+        child: kIsWeb
+            ? Image.network(
+                file!.path,
+                width: 65,
+                height: 65,
+                fit: BoxFit.cover,
+              )
+            : Image.file(
+                file!,
+                width: 65,
+                height: 65,
+                fit: BoxFit.cover,
+              ),
       );
     } else if (imageUrl != null && imageUrl!.trim().isNotEmpty) {
       String url = imageUrl!.trim();
@@ -463,28 +471,25 @@ class _IDUploadPair extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasFrontImage =
-        frontFile != null || (frontUrl != null && frontUrl!.isNotEmpty);
-    final bool hasBackImage =
-        backFile != null || (backUrl != null && backUrl!.isNotEmpty);
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SquareUpload(
-          title: hasFrontImage ? 'Replace' : 'Front',
-          size: 20.w,
-          file: frontFile,
-          imageUrl: frontUrl,
-          onTap: () => onSelect(_UploadTarget.idFront),
+        Expanded(
+          child: _SquareUpload(
+            title: 'Front',
+            file: frontFile,
+            imageUrl: frontUrl,
+            onTap: () => onSelect(_UploadTarget.idFront),
+          ),
         ),
         SizedBox(width: 3.w),
-        _SquareUpload(
-          title: hasBackImage ? 'Replace' : 'Back',
-          size: 20.w,
-          file: backFile,
-          imageUrl: backUrl,
-          onTap: () => onSelect(_UploadTarget.idBack),
+        Expanded(
+          child: _SquareUpload(
+            title: 'Back',
+            file: backFile,
+            imageUrl: backUrl,
+            onTap: () => onSelect(_UploadTarget.idBack),
+          ),
         ),
       ],
     );
@@ -507,15 +512,21 @@ class _SquareUpload extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double boxSize = size ?? 26.w;
+    final double? boxSize = size;
     Widget content;
     if (file != null) {
+      final Widget imageWidget = kIsWeb
+          ? Image.network(
+              file!.path,
+              fit: BoxFit.cover,
+            )
+          : Image.file(
+              file!,
+              fit: BoxFit.cover,
+            );
       content = ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Image.file(
-          file!,
-          fit: BoxFit.cover,
-        ),
+        child: imageWidget,
       );
     } else if (imageUrl != null && imageUrl!.trim().isNotEmpty) {
       String url = imageUrl!.trim();
@@ -555,17 +566,20 @@ class _SquareUpload extends StatelessWidget {
         ),
         GestureDetector(
           onTap: onTap,
-          child: SizedBox(
-            width: boxSize,
-            height: boxSize,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
-                border:
-                    Border.all(color: AppColors.grayD9.withValues(alpha: 0.6)),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: SizedBox(
+              width: boxSize ?? double.infinity,
+              height: boxSize ?? double.infinity,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border:
+                      Border.all(color: AppColors.grayD9.withValues(alpha: 0.6)),
+                ),
+                child: content,
               ),
-              child: content,
             ),
           ),
         ),

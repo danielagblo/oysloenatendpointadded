@@ -17,7 +17,9 @@ import 'package:oysloe_mobile/features/dashboard/domain/usecases/delete_product_
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/set_product_status_usecase.dart';
 
 class AdScreen extends StatefulWidget {
-  const AdScreen({super.key});
+  const AdScreen({super.key, this.initialTab = 0});
+
+  final int initialTab;
 
   @override
   State<AdScreen> createState() => _AdScreenState();
@@ -30,18 +32,18 @@ class _AdScreenState extends State<AdScreen>
   List<ProductEntity> _allProducts = [];
   bool _isLoading = true;
   String? _error;
-  
+
   final GetUserProductsUseCase _getUserProductsUseCase =
       sl<GetUserProductsUseCase>();
-  final DeleteProductUseCase _deleteProductUseCase =
-      sl<DeleteProductUseCase>();
+  final DeleteProductUseCase _deleteProductUseCase = sl<DeleteProductUseCase>();
   final SetProductStatusUseCase _setProductStatusUseCase =
       sl<SetProductStatusUseCase>();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController =
+        TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         setState(() {
@@ -90,8 +92,7 @@ class _AdScreenState extends State<AdScreen>
     switch (tabIndex) {
       case 0: // Active
         return _allProducts
-            .where((p) => 
-                p.status.toLowerCase() == 'active' && !p.isTaken)
+            .where((p) => p.status.toLowerCase() == 'active' && !p.isTaken)
             .toList();
       case 1: // Pending
         return _allProducts
@@ -137,7 +138,8 @@ class _AdScreenState extends State<AdScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Ad'),
-        content: Text('Are you sure you want to delete "${product.name}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${product.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -233,11 +235,16 @@ class _AdScreenState extends State<AdScreen>
                       SizedBox(height: 0.6.h),
                       Container(
                         color: AppColors.white,
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 4.w, vertical: 2.h),
                         child: _CustomTabBar(
                           controller: _tabController,
-                          tabs: const ['Active', 'Pending', 'Taken', 'Suspended'],
+                          tabs: const [
+                            'Active',
+                            'Pending',
+                            'Taken',
+                            'Suspended'
+                          ],
                           icons: const [
                             'assets/icons/active.svg',
                             'assets/icons/pending.svg',

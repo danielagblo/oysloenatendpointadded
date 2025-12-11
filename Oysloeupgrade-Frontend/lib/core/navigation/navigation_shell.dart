@@ -26,6 +26,7 @@ class _NavigationShellState extends State<NavigationShell> {
   late NavigationState _navigationState;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int? _forcedIndex; // When end drawer is open, highlight Profile tab
+  int _drawerKey = 0; // Force drawer rebuild on open
 
   @override
   void initState() {
@@ -118,13 +119,17 @@ class _NavigationShellState extends State<NavigationShell> {
             final width = MediaQuery.of(context).size.width * 0.8;
             return SizedBox(
               width: width,
-              child: const ProfileMenuDrawer(),
+              child: ProfileMenuDrawer(key: ValueKey(_drawerKey)),
             );
           },
         ),
         onEndDrawerChanged: (isOpened) {
           setState(() {
             _forcedIndex = isOpened ? 4 : null;
+            if (isOpened) {
+              // Force drawer to rebuild with fresh data when opened
+              _drawerKey++;
+            }
           });
         },
         bottomNavigationBar: ListenableBuilder(

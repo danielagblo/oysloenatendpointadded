@@ -10,6 +10,7 @@ abstract class ProductsRemoteDataSource {
   Future<List<ProductModel>> getProducts({
     String? search,
     String? ordering,
+    int? sellerId,
   });
 
   Future<ProductModel> getProductDetail(int id);
@@ -70,6 +71,7 @@ abstract class ProductsRemoteDataSource {
     required int category,
     String? duration,
     List<String>? images,
+    String? status,
   });
 
   Future<void> submitFeedback({
@@ -91,6 +93,7 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
   Future<List<ProductModel>> getProducts({
     String? search,
     String? ordering,
+    int? sellerId,
   }) async {
     try {
       final Response<dynamic> response = await _client.get<dynamic>(
@@ -98,6 +101,7 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
         queryParameters: _buildQuery(
           search: search,
           ordering: ordering,
+          sellerId: sellerId,
         ),
       );
       return _parseProductList(response.data);
@@ -382,6 +386,7 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     required int category,
     String? duration,
     List<String>? images,
+    String? status,
   }) async {
     try {
       final Map<String, dynamic> data = <String, dynamic>{
@@ -391,6 +396,8 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
         'type': type,
         'category': category,
         if (duration != null && duration.isNotEmpty) 'duration': duration,
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (images != null && images.isNotEmpty) 'images': images,
       };
 
       final Response<dynamic> response = await _client.post<dynamic>(
@@ -431,6 +438,7 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
   Map<String, dynamic>? _buildQuery({
     String? search,
     String? ordering,
+    int? sellerId,
   }) {
     final Map<String, dynamic> query = <String, dynamic>{};
     if (search != null && search.isNotEmpty) {
@@ -438,6 +446,9 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     }
     if (ordering != null && ordering.isNotEmpty) {
       query['ordering'] = ordering;
+    }
+    if (sellerId != null) {
+      query['owner'] = sellerId;
     }
     return query.isEmpty ? null : query;
   }

@@ -20,6 +20,11 @@ class ProductEntity extends Equatable {
     this.isFavourite = false,
     this.location,
     this.isTaken = false,
+    this.sellerName,
+    this.sellerAvatar,
+    this.sellerVerified,
+    this.sellerBusinessName,
+    this.sellerId,
   });
 
   final int id;
@@ -40,6 +45,11 @@ class ProductEntity extends Equatable {
   final bool isFavourite;
   final ProductLocation? location;
   final bool isTaken;
+  final String? sellerName;
+  final String? sellerAvatar;
+  final bool? sellerVerified;
+  final String? sellerBusinessName;
+  final int? sellerId;
 
   @override
   List<Object?> get props => <Object?>[
@@ -61,6 +71,11 @@ class ProductEntity extends Equatable {
         isFavourite,
         location,
         isTaken,
+        sellerName,
+        sellerAvatar,
+        sellerVerified,
+        sellerBusinessName,
+        sellerId,
       ];
 }
 

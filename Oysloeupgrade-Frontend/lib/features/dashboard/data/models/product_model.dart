@@ -21,6 +21,11 @@ class ProductModel extends ProductEntity {
     super.isFavourite = false,
     super.location,
     super.isTaken = false,
+    super.sellerName,
+    super.sellerAvatar,
+    super.sellerVerified,
+    super.sellerBusinessName,
+    super.sellerId,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -40,10 +45,16 @@ class ProductModel extends ProductEntity {
       updatedAt: DateUtilsExt.parseOrEpoch(json['updated_at'] as String?),
       totalReports: _parseInt(json['total_reports']),
       totalFavourites: _parseInt(json['total_favourites']),
-      isFavourite: json['favourited_by_user'] as bool? ?? 
-                   json['is_favourite'] as bool? ?? false,
+      isFavourite: json['favourited_by_user'] as bool? ??
+          json['is_favourite'] as bool? ??
+          false,
       location: _parseLocation(json['location']),
       isTaken: json['is_taken'] as bool? ?? false,
+      sellerName: _parseSellerName(json),
+      sellerAvatar: _parseSellerAvatar(json),
+      sellerVerified: _parseSellerVerified(json),
+      sellerBusinessName: _parseSellerBusinessName(json),
+      sellerId: _parseSellerId(json),
     );
   }
 
@@ -152,5 +163,68 @@ class ProductModel extends ProductEntity {
       return int.tryParse(value) ?? 0;
     }
     return 0;
+  }
+
+  static Map<String, dynamic>? _extractSeller(dynamic json) {
+    if (json is! Map<String, dynamic>) return null;
+    final dynamic candidate =
+        json['owner'] ?? json['user'] ?? json['seller'] ?? json['created_by'];
+    if (candidate is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(candidate);
+    }
+    return null;
+  }
+
+  static String? _parseSellerName(Map<String, dynamic> json) {
+    final Map<String, dynamic>? seller = _extractSeller(json);
+    if (seller == null) return null;
+    return _resolveString(
+      seller['name'] ??
+          seller['full_name'] ??
+          seller['username'] ??
+          seller['first_name'],
+    );
+  }
+
+  static String? _parseSellerAvatar(Map<String, dynamic> json) {
+    final Map<String, dynamic>? seller = _extractSeller(json);
+    if (seller == null) return null;
+    return _resolveString(
+      seller['avatar'] ??
+          seller['image'] ??
+          seller['profile_image'] ??
+          seller['photo'],
+    );
+  }
+
+  static bool? _parseSellerVerified(Map<String, dynamic> json) {
+    final Map<String, dynamic>? seller = _extractSeller(json);
+    if (seller == null) return null;
+    final dynamic value =
+        seller['admin_verified'] ?? seller['is_verified'] ?? seller['verified'];
+    if (value is bool) return value;
+    if (value is String) {
+      return value.toLowerCase() == 'true' || value == '1';
+    }
+    if (value is num) return value != 0;
+    return null;
+  }
+
+  static String? _parseSellerBusinessName(Map<String, dynamic> json) {
+    final Map<String, dynamic>? seller = _extractSeller(json);
+    if (seller == null) return null;
+    return _resolveString(
+      seller['business_name'] ??
+          seller['businessName'] ??
+          seller['company_name'] ??
+          seller['companyName'],
+    );
+  }
+
+  static int? _parseSellerId(Map<String, dynamic> json) {
+    final Map<String, dynamic>? seller = _extractSeller(json);
+    if (seller == null) return null;
+    return _parseNullableInt(
+        seller['id'] ?? seller['user_id'] ?? seller['userId']);
   }
 }

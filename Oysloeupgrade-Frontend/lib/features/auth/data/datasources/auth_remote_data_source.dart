@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constants/api.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -94,15 +96,44 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       Future<void> addFile(String field, String? path) async {
         if (path == null || path.isEmpty) return;
-        formData.files.add(
-          MapEntry(
-            field,
-            await MultipartFile.fromFile(
-              path,
-              filename: path.split('/').last,
-            ),
-          ),
-        );
+        try {
+          if (kIsWeb) {
+            final XFile xfile = XFile(path);
+            final List<int> bytes = await xfile.readAsBytes();
+            String filename = xfile.name;
+            if (filename.isEmpty) {
+              final Uri uri = Uri.parse(path);
+              filename = uri.pathSegments.isNotEmpty
+                  ? uri.pathSegments.last
+                  : 'upload_$field.png';
+            }
+            if (!filename.contains('.')) {
+              filename = '$filename.png';
+            }
+            formData.files.add(
+              MapEntry(
+                field,
+                MultipartFile.fromBytes(
+                  bytes,
+                  filename: filename,
+                ),
+              ),
+            );
+          } else {
+            final String filename = path.split(RegExp(r'[\/\\]')).last;
+            formData.files.add(
+              MapEntry(
+                field,
+                await MultipartFile.fromFile(
+                  path,
+                  filename: filename.isEmpty ? 'upload_$field.png' : filename,
+                ),
+              ),
+            );
+          }
+        } catch (error) {
+          throw ApiException('Failed to attach file for $field');
+        }
       }
 
       await addFile('avatar', params.avatarFilePath);

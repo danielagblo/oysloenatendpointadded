@@ -18,6 +18,7 @@ abstract class DashboardRepository {
   Future<Either<Failure, List<ProductEntity>>> getProducts({
     String? search,
     String? ordering,
+    int? sellerId,
   });
 
   Future<Either<Failure, List<ProductEntity>>> getUserProducts();
@@ -114,6 +115,7 @@ abstract class DashboardRepository {
     required int category,
     String? duration,
     List<String>? images,
+    String? status,
   });
 
   /// Account delete requests

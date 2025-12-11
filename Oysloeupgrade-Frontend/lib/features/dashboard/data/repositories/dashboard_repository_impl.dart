@@ -420,6 +420,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   Future<Either<Failure, List<ProductEntity>>> getProducts({
     String? search,
     String? ordering,
+    int? sellerId,
   }) async {
     final bool isConnected = await _network.isConnected;
     if (!isConnected) {
@@ -430,6 +431,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
       final List<ProductEntity> products = (await _remoteDataSource.getProducts(
         search: search,
         ordering: ordering,
+        sellerId: sellerId,
       ))
           .cast<ProductEntity>();
       return right(products);
@@ -1120,6 +1122,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required int category,
     String? duration,
     List<String>? images,
+    String? status,
   }) async {
     final bool isConnected = await _network.isConnected;
     if (!isConnected) {
@@ -1135,6 +1138,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
         category: category,
         duration: duration,
         images: images,
+        status: status,
       );
       return right(product);
     } on ApiException catch (error) {

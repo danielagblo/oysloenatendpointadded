@@ -9,13 +9,15 @@ class GetProductsParams extends Equatable {
   const GetProductsParams({
     this.search,
     this.ordering,
+    this.sellerId,
   });
 
   final String? search;
   final String? ordering;
+  final int? sellerId;
 
   @override
-  List<Object?> get props => <Object?>[search, ordering];
+  List<Object?> get props => <Object?>[search, ordering, sellerId];
 }
 
 class GetProductsUseCase {
@@ -29,6 +31,7 @@ class GetProductsUseCase {
     return _repository.getProducts(
       search: params.search,
       ordering: params.ordering,
+      sellerId: params.sellerId,
     );
   }
 }

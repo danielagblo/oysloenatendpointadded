@@ -6,8 +6,7 @@ import '../../../../core/usecase/usecase.dart';
 import '../entities/product_entity.dart';
 import '../repositories/dashboard_repository.dart';
 
-class CreateProductUseCase
-    extends UseCase<ProductEntity, CreateProductParams> {
+class CreateProductUseCase extends UseCase<ProductEntity, CreateProductParams> {
   CreateProductUseCase(this._repository);
 
   final DashboardRepository _repository;
@@ -22,6 +21,7 @@ class CreateProductUseCase
       category: params.category,
       duration: params.duration,
       images: params.images,
+      status: params.status,
     );
   }
 }
@@ -35,6 +35,7 @@ class CreateProductParams extends Equatable {
     required this.category,
     this.duration,
     this.images,
+    this.status = 'PENDING',
   });
 
   final String name;
@@ -44,6 +45,7 @@ class CreateProductParams extends Equatable {
   final int category;
   final String? duration;
   final List<String>? images;
+  final String status;
 
   @override
   List<Object?> get props => <Object?>[
@@ -54,6 +56,6 @@ class CreateProductParams extends Equatable {
         category,
         duration,
         images,
+        status,
       ];
 }
-

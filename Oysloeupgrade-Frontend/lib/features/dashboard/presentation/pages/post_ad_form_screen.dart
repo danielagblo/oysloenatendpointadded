@@ -20,6 +20,7 @@ import 'package:oysloe_mobile/features/dashboard/presentation/bloc/features/feat
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_state.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/ad_input.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/pages/ad_screen.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_state.dart';
 
@@ -240,9 +241,17 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
       listener: (context, state) {
         if (state.status == ProductsStatus.success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Ad posted successfully!')),
+            const SnackBar(
+              content: Text(
+                  'Ad submitted for review! You can view it in the Pending tab.'),
+            ),
           );
-          Navigator.of(context).pop();
+          // Navigate to Ad Screen with Pending tab selected (index 1)
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const AdScreen(initialTab: 1),
+            ),
+          );
         } else if (state.status == ProductsStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message ?? 'Failed to post ad.')),

@@ -16,6 +16,8 @@ import 'package:oysloe_mobile/features/auth/domain/repositories/auth_repository.
 import 'package:oysloe_mobile/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/account_delete/account_delete_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/account_delete/account_delete_state.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/product_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_user_products_usecase.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 
 /// A right-side drawer shown when tapping the Profile tab.
@@ -30,27 +32,70 @@ class ProfileMenuDrawer extends StatefulWidget {
 class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
   bool _hasSession = false;
   AuthUserEntity? _user;
+  int _activeAdsCount = 0;
+  int _takenAdsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _hydrateSession();
+    _loadProductCounts();
   }
 
   Future<void> _hydrateSession() async {
     final AuthRepository repository = sl<AuthRepository>();
-    final session = repository.currentSession;
+    
+    // First, get current/cached session
+    final session = repository.currentSession ?? await repository.cachedSession();
     if (session != null) {
-      _hasSession = true;
-      _user = session.user;
+      if (mounted) {
+        setState(() {
+          _hasSession = true;
+          _user = session.user;
+        });
+      }
     }
-
-    final refreshed = await repository.cachedSession();
+    
+    // Then fetch fresh profile from server
+    final profileResult = await repository.getProfile();
     if (!mounted) return;
-    setState(() {
-      _hasSession = refreshed != null;
-      _user = refreshed?.user ?? _user;
-    });
+    
+    profileResult.fold(
+      (failure) {
+        // If fetch fails, keep cached data
+        debugPrint('Profile fetch failed: ${failure.message}');
+      },
+      (freshUser) {
+        setState(() {
+          _user = freshUser;
+          _hasSession = true;
+        });
+      },
+    );
+  }
+
+  Future<void> _loadProductCounts() async {
+    final getUserProductsUseCase = sl<GetUserProductsUseCase>();
+    final result = await getUserProductsUseCase(const NoParams());
+    
+    if (!mounted) return;
+    
+    result.fold(
+      (failure) {
+        debugPrint('Failed to load product counts: ${failure.message}');
+      },
+      (products) {
+        final activeCount = products
+            .where((p) => p.status.toLowerCase() == 'active' && !p.isTaken)
+            .length;
+        final takenCount = products.where((p) => p.isTaken).length;
+        
+        setState(() {
+          _activeAdsCount = activeCount;
+          _takenAdsCount = takenCount;
+        });
+      },
+    );
   }
 
   @override
@@ -161,14 +206,14 @@ class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
                   Expanded(
                     child: _StatCard(
                       title: 'Active Ads',
-                      value: _formatStatValue(_user?.activeAds),
+                      value: _activeAdsCount.toString(),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _StatCard(
                       title: 'Taken Ads',
-                      value: _formatStatValue(_user?.takenAds),
+                      value: _takenAdsCount.toString(),
                     ),
                   ),
                 ],
@@ -345,29 +390,8 @@ class _ProfileHeaderCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: AppColors.blueGray374957)),
                 SizedBox(height: 0.5.h),
-                Row(
-                  children: [
-                    if (user?.adminVerified == true) ...[
-                      Container(
-                        width: 15,
-                        height: 15,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary,
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.check,
-                          size: 12,
-                          color: AppColors.blueGray374957,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Text(_formatLevel(user?.level) ?? '—',
-                        style: AppTypography.bodySmall),
-                  ],
-                ),
+                Text(_formatLevel(user?.level) ?? '—',
+                    style: AppTypography.bodySmall),
                 SizedBox(height: 0.8.h),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(100),
@@ -424,7 +448,11 @@ class _AvatarImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String trimmed = (avatarUrl ?? '').trim();
+    debugPrint('🔍 Avatar URL received: "$avatarUrl"');
+    debugPrint('🔍 Avatar URL trimmed: "$trimmed"');
+    
     if (trimmed.isEmpty) {
+      debugPrint('⚠️ Avatar URL is empty, showing default icon');
       return SvgPicture.asset(
         'assets/images/default_user.svg',
         width: 39,
@@ -438,6 +466,9 @@ class _AvatarImage extends StatelessWidget {
       final Uri baseUri = Uri.parse(AppStrings.baseUrl);
       final String origin = '${baseUri.scheme}://${baseUri.host}';
       url = '$origin$url';
+      debugPrint('🔗 Resolved relative URL to: $url');
+    } else {
+      debugPrint('🔗 Using absolute URL: $url');
     }
 
     return ClipOval(
@@ -446,7 +477,27 @@ class _AvatarImage extends StatelessWidget {
         width: 39,
         height: 39,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) {
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            debugPrint('✅ Avatar loaded successfully');
+            return child;
+          }
+          debugPrint('⏳ Loading avatar...');
+          return Container(
+            width: 39,
+            height: 39,
+            color: AppColors.grayE4,
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('❌ Avatar failed to load: $error');
           return SvgPicture.asset(
             'assets/images/default_user.svg',
             width: 39,

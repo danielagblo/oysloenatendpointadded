@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
@@ -546,13 +547,21 @@ class _CircleImageTile extends StatelessWidget {
     final bool hasLocal = imagePath != null && imagePath!.isNotEmpty;
     Widget child;
     if (hasLocal) {
+      final File localFile = File(imagePath!);
       child = ClipOval(
-        child: Image.file(
-          File(imagePath!),
-          width: 50,
-          height: 50,
-          fit: BoxFit.cover,
-        ),
+        child: kIsWeb
+            ? Image.network(
+                localFile.path,
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+              )
+            : Image.file(
+                localFile,
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+              ),
       );
     } else if (normalizedUrl != null) {
       child = ClipOval(

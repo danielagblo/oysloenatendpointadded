@@ -18,6 +18,7 @@ import 'package:oysloe_mobile/features/dashboard/domain/entities/product_entity.
 import 'package:oysloe_mobile/features/dashboard/domain/entities/review_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_detail_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_product_reviews_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_products_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/mark_product_as_taken_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/chat_usecases.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/favourites_usecases.dart';
@@ -93,7 +94,8 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
       : _getProductDetailUseCase = sl<GetProductDetailUseCase>(),
         _getProductReviewsUseCase = sl<GetProductReviewsUseCase>(),
         _markProductAsTakenUseCase = sl<MarkProductAsTakenUseCase>(),
-        _confirmMarkProductAsTakenUseCase = sl<ConfirmMarkProductAsTakenUseCase>(),
+        _confirmMarkProductAsTakenUseCase =
+            sl<ConfirmMarkProductAsTakenUseCase>(),
         _getOrCreateChatRoomIdUseCase = sl<GetOrCreateChatRoomIdUseCase>(),
         _sendChatMessageUseCase = sl<SendChatMessageUseCase>(),
         _toggleFavouriteUseCase = sl<ToggleFavouriteUseCase>();
@@ -107,13 +109,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
   final ScrollController _cardsController = ScrollController();
   bool _canScrollLeft = false;
   bool _canScrollRight = true;
-  final List<String> _sellerAdImages = const [
-    'assets/images/ad1.jpg',
-    'assets/images/ad2.jpg',
-    'assets/images/ad3.jpg',
-    'assets/images/ad4.jpg',
-    'assets/images/ad5.jpg',
-  ];
+  List<ProductEntity> _sellerProducts = [];
+  bool _isLoadingSellerProducts = false;
+  final GetProductsUseCase _getProductsUseCase = sl<GetProductsUseCase>();
   final GetProductDetailUseCase _getProductDetailUseCase;
   final GetProductReviewsUseCase _getProductReviewsUseCase;
   final MarkProductAsTakenUseCase _markProductAsTakenUseCase;
@@ -235,7 +233,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     if (raw == null) return null;
     final String trimmed = raw.trim();
     if (trimmed.isEmpty) return null;
-    
+
     // If it's already a full URL, validate it
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       final uri = Uri.tryParse(trimmed);
@@ -250,10 +248,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     try {
       final Uri baseUri = Uri.parse(AppStrings.baseUrl);
       final String origin = '${baseUri.scheme}://${baseUri.host}';
-      final String fullUrl = trimmed.startsWith('/') 
-          ? '$origin$trimmed' 
-          : '$origin/$trimmed';
-      
+      final String fullUrl =
+          trimmed.startsWith('/') ? '$origin$trimmed' : '$origin/$trimmed';
+
       // Validate the constructed URL
       final uri = Uri.tryParse(fullUrl);
       if (uri != null && uri.hasScheme && uri.hasAuthority) {
@@ -262,7 +259,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     } catch (e) {
       // If URL construction fails, return null
     }
-    
+
     return null;
   }
 
@@ -361,7 +358,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
         // Invalid URL, show placeholder
         return _buildImagePlaceholder();
       }
-      
+
       return Image.network(
         uri.toString(),
         fit: BoxFit.cover,
@@ -415,6 +412,37 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     );
   }
 
+  Widget _buildSellerAvatar(String? rawUrl) {
+    final String trimmed = (rawUrl ?? '').trim();
+    if (trimmed.isNotEmpty) {
+      String resolved = trimmed;
+      if (resolved.startsWith('/')) {
+        final Uri baseUri = Uri.parse(AppStrings.baseUrl);
+        final String origin = '${baseUri.scheme}://${baseUri.host}';
+        resolved = '$origin$resolved';
+      }
+      return ClipOval(
+        child: Image.network(
+          resolved,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => SvgPicture.asset(
+            'assets/images/default_user.svg',
+            width: 50,
+            height: 50,
+          ),
+        ),
+      );
+    }
+
+    return SvgPicture.asset(
+      'assets/images/default_user.svg',
+      width: 50,
+      height: 50,
+    );
+  }
+
   List<String> _getSafetyTips() {
     return [
       'Check the item carefully and ask relevant questions.',
@@ -435,10 +463,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
   }
 
   Future<void> _showReviewsBottomSheet(int initialFilter) async {
-
     final RatingSummary summary = _ratingSummary;
-  final List<reviews_widget.ReviewComment> reviewComments =
-    _buildReviewComments();
+    final List<reviews_widget.ReviewComment> reviewComments =
+        _buildReviewComments();
     final List<reviews_widget.RatingBreakdown> breakdown =
         _buildBottomSheetBreakdown(summary);
     final int? productId = _product?.id ?? int.tryParse(widget.adId ?? '');
@@ -505,8 +532,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
       return true;
     }
 
-    final String? normalizedReviewName =
-        _normalizeIdentifier(review.userName);
+    final String? normalizedReviewName = _normalizeIdentifier(review.userName);
     if (_currentUserNameKey != null &&
         normalizedReviewName != null &&
         normalizedReviewName == _currentUserNameKey) {
@@ -579,12 +605,11 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
             const SizedBox(width: 4),
             Text(
               label,
-              style: AppTypography.bodySmall
-                  .copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13.sp,
-                      color: AppColors.blueGray374957
-                          .withValues(alpha: enabled ? 1 : 0.6)),
+              style: AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.sp,
+                  color: AppColors.blueGray374957
+                      .withValues(alpha: enabled ? 1 : 0.6)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -722,9 +747,41 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshReviews();
+      _loadSellerProducts();
     });
 
     _hydrateCurrentUser();
+  }
+
+  Future<void> _loadSellerProducts() async {
+    final sellerId = _product?.sellerId;
+    if (sellerId == null) return;
+
+    setState(() {
+      _isLoadingSellerProducts = true;
+    });
+
+    final result = await _getProductsUseCase(
+      GetProductsParams(sellerId: sellerId),
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        setState(() {
+          _isLoadingSellerProducts = false;
+        });
+      },
+      (products) {
+        setState(() {
+          // Filter out the current product and limit to 10
+          _sellerProducts =
+              products.where((p) => p.id != _product?.id).take(10).toList();
+          _isLoadingSellerProducts = false;
+        });
+      },
+    );
   }
 
   void _scrollCards(bool forward) {
@@ -944,13 +1001,13 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
 
     // Store original product in case we need to revert
     final ProductEntity originalProduct = product;
-    
+
     // Optimistically update UI immediately
     final bool newFavouriteState = !product.isFavourite;
     final int newFavouriteCount = newFavouriteState
         ? product.totalFavourites + 1
         : (product.totalFavourites > 0 ? product.totalFavourites - 1 : 0);
-    
+
     final ProductEntity optimisticProduct = ProductEntity(
       id: product.id,
       pid: product.pid,
@@ -1003,7 +1060,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
         if (updatedProduct.isFavourite) {
           showSuccessSnackBar(context, 'Added to favorites');
         }
-        
+
         // That message should only appear when removing from favorites screen
       },
     );
@@ -1067,10 +1124,8 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
       if (!mounted) return;
       final user = session?.user;
 
-      final String? normalizedName =
-          _normalizeIdentifier(user?.name);
-      final String? normalizedEmail =
-          _normalizeIdentifier(user?.email);
+      final String? normalizedName = _normalizeIdentifier(user?.name);
+      final String? normalizedEmail = _normalizeIdentifier(user?.email);
       final String? normalizedId = _normalizeIdentifier(user?.id);
 
       if (normalizedName == _currentUserNameKey &&
@@ -1111,7 +1166,7 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
     final RatingSummary ratingSummary = _ratingSummary;
     final List<rating_widget.RatingBreakdown> overviewBreakdown =
         _buildOverviewBreakdown(ratingSummary);
-  // final bool hasReviews = _reviews.isNotEmpty; // no longer used; sheet opens even without reviews
+    // final bool hasReviews = _reviews.isNotEmpty; // no longer used; sheet opens even without reviews
 
     return Scaffold(
       backgroundColor: AppColors.grayF9,
@@ -1137,7 +1192,8 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
             label: '${_product?.totalReports ?? 0}',
             iconSize: 18,
             onTap: () {
-              final int? productId = _product?.id ?? int.tryParse(widget.adId ?? '');
+              final int? productId =
+                  _product?.id ?? int.tryParse(widget.adId ?? '');
               context.pushNamed(
                 AppRouteNames.dashboardReport,
                 extra: <String, dynamic>{
@@ -1467,23 +1523,26 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                                 _actionChip(
                                   label: _isAdTaken ? 'Taken' : 'Mark as taken',
                                   svgAsset: 'assets/icons/mark_as_taken.svg',
-                                  onTap: _isAdTaken 
-                                      ? _handleConfirmMarkAdAsTaken 
+                                  onTap: _isAdTaken
+                                      ? _handleConfirmMarkAdAsTaken
                                       : _handleMarkAdAsTaken,
-                                  isLoading: _isMarkingAsTaken || _isConfirmingTaken,
-                                  enabled: !_isMarkingAsTaken && !_isConfirmingTaken,
+                                  isLoading:
+                                      _isMarkingAsTaken || _isConfirmingTaken,
+                                  enabled:
+                                      !_isMarkingAsTaken && !_isConfirmingTaken,
                                 ),
                                 const SizedBox(width: 12),
                                 _actionChip(
                                   label: 'Report Seller',
                                   svgAsset: 'assets/icons/flag.svg',
                                   onTap: () {
-                                    final int? productId =
-                                        _product?.id ?? int.tryParse(widget.adId ?? '');
+                                    final int? productId = _product?.id ??
+                                        int.tryParse(widget.adId ?? '');
                                     context.pushNamed(
                                       AppRouteNames.dashboardReport,
                                       extra: <String, dynamic>{
-                                        if (productId != null) 'productId': productId,
+                                        if (productId != null)
+                                          'productId': productId,
                                       },
                                     );
                                   },
@@ -1712,7 +1771,13 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Elektromart Gh Ltd',
+                                _product?.sellerBusinessName?.trim().isEmpty ??
+                                        true
+                                    ? 'No Business Name'
+                                    : _product!.sellerBusinessName!,
+                                style: AppTypography.body.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               Container(
@@ -1760,38 +1825,117 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                       ],
                     ),
                     SizedBox(height: 2.h),
-                    SizedBox(
-                      height: 8.h,
-                      child: Stack(
-                        children: [
-                          ListView.separated(
-                            controller: _cardsController,
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.only(left: 28, right: 64),
-                            itemBuilder: (context, index) {
-                              final img = _sellerAdImages[
-                                  index % _sellerAdImages.length];
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.asset(
-                                  img,
-                                  width: 20.w,
-                                  fit: BoxFit.cover,
-                                ),
-                              );
-                            },
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 12),
-                            itemCount: _sellerAdImages.length,
+                    if (_isLoadingSellerProducts)
+                      SizedBox(
+                        height: 8.h,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
                           ),
-                          if (_canScrollLeft)
+                        ),
+                      )
+                    else if (_sellerProducts.isEmpty)
+                      SizedBox(
+                        height: 8.h,
+                        child: Center(
+                          child: Text(
+                            'No other ads from this seller',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        height: 8.h,
+                        child: Stack(
+                          children: [
+                            ListView.separated(
+                              controller: _cardsController,
+                              scrollDirection: Axis.horizontal,
+                              padding:
+                                  const EdgeInsets.only(left: 28, right: 64),
+                              itemBuilder: (context, index) {
+                                final product = _sellerProducts[index];
+                                final imageUrl = product.image.isNotEmpty
+                                    ? product.image
+                                    : (product.images.isNotEmpty
+                                        ? product.images.first
+                                        : '');
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: imageUrl.isNotEmpty
+                                      ? Image.network(
+                                          imageUrl,
+                                          width: 20.w,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Container(
+                                              width: 20.w,
+                                              color: AppColors.grayF9,
+                                              child: Icon(
+                                                Icons
+                                                    .image_not_supported_outlined,
+                                                color: AppColors.gray8B959E,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Container(
+                                          width: 20.w,
+                                          color: AppColors.grayF9,
+                                          child: Icon(
+                                            Icons.image_not_supported_outlined,
+                                            color: AppColors.gray8B959E,
+                                          ),
+                                        ),
+                                );
+                              },
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 12),
+                              itemCount: _sellerProducts.length,
+                            ),
+                            if (_canScrollLeft)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: InkWell(
+                                  onTap: () => _scrollCards(false),
+                                  borderRadius: BorderRadius.circular(28),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(left: 4),
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.blueGray374957
+                                            .withValues(alpha: 0.08),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.04),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        )
+                                      ],
+                                    ),
+                                    child: const Icon(Icons.chevron_left),
+                                  ),
+                                ),
+                              ),
                             Align(
-                              alignment: Alignment.centerLeft,
+                              alignment: Alignment.centerRight,
                               child: InkWell(
-                                onTap: () => _scrollCards(false),
+                                onTap: _canScrollRight
+                                    ? () => _scrollCards(true)
+                                    : null,
                                 borderRadius: BorderRadius.circular(28),
                                 child: Container(
-                                  margin: const EdgeInsets.only(left: 4),
+                                  margin: const EdgeInsets.only(right: 4),
                                   width: 30,
                                   height: 30,
                                   decoration: BoxDecoration(
@@ -1810,44 +1954,13 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                                       )
                                     ],
                                   ),
-                                  child: const Icon(Icons.chevron_left),
+                                  child: const Icon(Icons.chevron_right),
                                 ),
                               ),
                             ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: InkWell(
-                              onTap: _canScrollRight
-                                  ? () => _scrollCards(true)
-                                  : null,
-                              borderRadius: BorderRadius.circular(28),
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 4),
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: AppColors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.blueGray374957
-                                        .withValues(alpha: 0.08),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.04),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    )
-                                  ],
-                                ),
-                                child: const Icon(Icons.chevron_right),
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                     SizedBox(height: 4.h),
                     Container(
                       padding:
@@ -1856,60 +1969,89 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                         color: AppColors.grayF9,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Row(
+                          Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              // Avatar with brand logo
-                              Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 27,
-                                    backgroundImage:
-                                        AssetImage('assets/images/man.jpg'),
-                                  ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: -2,
-                                    child: Image.asset(
-                                      'assets/icons/brand_logo.png',
-                                      width: 30,
-                                      height: 30,
-                                    ),
-                                  ),
-                                ],
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.white,
+                                  border: Border.all(
+                                      color: AppColors.primary, width: 3),
+                                ),
+                                alignment: Alignment.center,
+                                child:
+                                    _buildSellerAvatar(_product?.sellerAvatar),
                               ),
-                              SizedBox(width: 16),
-                              // User info
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Jan, 2024',
-                                      style: AppTypography.bodySmall.copyWith(
-                                        color: Color(0xFF646161),
-                                      ),
+                              Positioned(
+                                bottom: -2,
+                                right: -4,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: Text(
+                                    'Seller',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Alexander Kowri',
-                                      style: AppTypography.bodySmall.copyWith(
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Total ads: 2K',
-                                      style: AppTypography.bodySmall,
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ],
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _product?.sellerName?.trim().isNotEmpty ==
+                                          true
+                                      ? _product!.sellerName!.trim()
+                                      : 'Seller',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                if (_product?.sellerVerified == true)
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Verified',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: AppColors.blueGray374957,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (_product?.sellerVerified == true)
+                                  const SizedBox(height: 4),
+                                Text(
+                                  'Listed on ${DateFormat('MMM d, y').format(_product?.createdAt ?? DateTime.now())}',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.blueGray374957
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -1927,7 +2069,8 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                             onFilterChanged: (filterIndex) {
                               _showReviewsBottomSheet(filterIndex);
                             },
-                            onViewReviewsPressed: () => _showReviewsBottomSheet(0),
+                            onViewReviewsPressed: () =>
+                                _showReviewsBottomSheet(0),
                           ),
                   ],
                 ),
