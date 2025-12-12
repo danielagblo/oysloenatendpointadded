@@ -52,6 +52,8 @@ import 'package:oysloe_mobile/features/dashboard/domain/usecases/create_product_
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/mark_product_as_taken_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/set_product_status_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/delete_product_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/repost_product_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/update_product_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/account_delete_requests_usecases.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/chat_usecases.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/subscription_usecases.dart';

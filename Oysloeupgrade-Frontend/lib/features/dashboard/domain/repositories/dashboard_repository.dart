@@ -118,6 +118,22 @@ abstract class DashboardRepository {
     String? status,
   });
 
+  Future<Either<Failure, ProductEntity>> repostProduct({
+    required int productId,
+  });
+
+  Future<Either<Failure, ProductEntity>> updateProduct({
+    required int productId,
+    String? name,
+    String? description,
+    String? price,
+    String? type,
+    int? category,
+    String? duration,
+    List<String>? images,
+    String? status,
+  });
+
   /// Account delete requests
 
   /// Account delete requests

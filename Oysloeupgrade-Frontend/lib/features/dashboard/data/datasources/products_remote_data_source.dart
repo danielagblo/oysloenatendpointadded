@@ -76,6 +76,22 @@ abstract class ProductsRemoteDataSource {
     String? status,
   });
 
+  Future<ProductModel> repostProduct({
+    required int productId,
+  });
+
+  Future<ProductModel> updateProduct({
+    required int productId,
+    String? name,
+    String? description,
+    String? price,
+    String? type,
+    int? category,
+    String? duration,
+    List<String>? images,
+    String? status,
+  });
+
   Future<void> submitFeedback({
     required int rating,
     String? comment,
@@ -466,6 +482,98 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
       );
       print('✅ Product created successfully. Response: ${response.statusCode}');
 
+      return _parseProduct(response.data);
+    } on DioException catch (error) {
+      throw ApiException(ApiHelper.getHumanReadableMessage(error));
+    } catch (error) {
+      throw ServerException(error.toString());
+    }
+  }
+
+  @override
+  Future<ProductModel> repostProduct({required int productId}) async {
+    try {
+      final Response<dynamic> response = await _client.post<dynamic>(
+        AppStrings.repostProductURL(productId.toString()),
+        data: const <String, dynamic>{},
+      );
+      return _parseProduct(response.data);
+    } on DioException catch (error) {
+      throw ApiException(ApiHelper.getHumanReadableMessage(error));
+    } catch (error) {
+      throw ServerException(error.toString());
+    }
+  }
+
+  @override
+  Future<ProductModel> updateProduct({
+    required int productId,
+    String? name,
+    String? description,
+    String? price,
+    String? type,
+    int? category,
+    String? duration,
+    List<String>? images,
+    String? status,
+  }) async {
+    try {
+      final Map<String, dynamic> data = <String, dynamic>{};
+      if (name != null) data['name'] = name;
+      if (description != null) data['description'] = description;
+      if (price != null) data['price'] = price;
+      if (type != null) data['type'] = type;
+      if (category != null) data['category'] = category;
+      if (duration != null) data['duration'] = duration;
+      if (status != null) data['status'] = status;
+
+      // Handle images if provided
+      FormData? formData;
+      if (images != null && images.isNotEmpty) {
+        formData = FormData.fromMap(data);
+        for (int i = 0; i < images.length; i++) {
+          final imagePath = images[i];
+          try {
+            if (kIsWeb) {
+              // For web, read bytes from URL
+              final bytes = await _client.get<List<int>>(
+                imagePath,
+                options: Options(responseType: ResponseType.bytes),
+              );
+              final String filename = imagePath.split('/').last;
+              formData.files.add(
+                MapEntry(
+                  'image',
+                  MultipartFile.fromBytes(
+                    bytes.data!,
+                    filename: filename.isEmpty ? 'product_image_$i.jpg' : filename,
+                  ),
+                ),
+              );
+            } else {
+              final String filename = imagePath.split(RegExp(r'[\/\\]')).last;
+              formData.files.add(
+                MapEntry(
+                  'image',
+                  await MultipartFile.fromFile(
+                    imagePath,
+                    filename:
+                        filename.isEmpty ? 'product_image_$i.jpg' : filename,
+                  ),
+                ),
+              );
+            }
+          } catch (error) {
+            throw ApiException(
+                'Failed to attach image ${i + 1}: ${error.toString()}');
+          }
+        }
+      }
+
+      final Response<dynamic> response = await _client.patch<dynamic>(
+        AppStrings.productDetailURL(productId.toString()),
+        data: formData ?? data,
+      );
       return _parseProduct(response.data);
     } on DioException catch (error) {
       throw ApiException(ApiHelper.getHumanReadableMessage(error));

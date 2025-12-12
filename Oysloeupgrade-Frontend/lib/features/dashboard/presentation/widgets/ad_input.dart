@@ -210,62 +210,85 @@ class AdDropdown<T> extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(compact ? 12 : 16),
-            border: Border.all(
-              color: isDark ? AppColors.blueGray374957 : AppColors.grayD9,
-              width: 1,
-            ),
-            color: isDark ? AppColors.blueGray374957 : AppColors.white,
+        DropdownButtonFormField<T>(
+          value: value,
+          items: items,
+          onChanged: enabled && items.isNotEmpty ? onChanged : null,
+          validator: validator,
+          style: AppTypography.body.copyWith(
+            color: isDark ? AppColors.white : AppColors.blueGray374957,
+            fontSize: 15.sp,
           ),
-          child: DropdownButtonFormField<T>(
-            // initialValue: value,
-            items: items,
-            onChanged: enabled ? onChanged : null,
-            validator: validator,
-            style: AppTypography.body.copyWith(
-              color: isDark ? AppColors.white : AppColors.blueGray374957,
+          dropdownColor: isDark ? AppColors.blueGray374957 : AppColors.white,
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: AppTypography.body.copyWith(
+              color: AppColors.gray8B959E,
               fontSize: 15.sp,
             ),
-            dropdownColor: isDark ? AppColors.blueGray374957 : AppColors.white,
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: AppTypography.body.copyWith(
-                color: AppColors.gray8B959E,
-                fontSize: 15.sp,
-              ),
-              prefixIcon: prefixIcon,
-              filled: false,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: compact ? 1.3.h : 10,
+            prefixIcon: prefixIcon,
+            filled: true,
+            fillColor: isDark ? AppColors.blueGray374957 : AppColors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(compact ? 12 : 16),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.blueGray374957 : AppColors.grayD9,
+                width: 1,
               ),
             ),
-            icon: Padding(
-              padding: const EdgeInsets.only(right: 14),
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.blueGray374957.withValues(alpha: 0.3)
-                      : AppColors.grayD9.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 16,
-                  color: isDark ? AppColors.white : AppColors.blueGray374957,
-                ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(compact ? 12 : 16),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.blueGray374957 : AppColors.grayD9,
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(compact ? 12 : 16),
+              borderSide: BorderSide(
+                color: AppColors.blueGray374957.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(compact ? 12 : 16),
+              borderSide: const BorderSide(
+                color: AppColors.redFF6B6B,
+                width: 1,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(compact ? 12 : 16),
+              borderSide: const BorderSide(
+                color: AppColors.redFF6B6B,
+                width: 1.5,
+              ),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: compact ? 1.3.h : 14,
+            ),
+          ),
+          icon: Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.blueGray374957.withValues(alpha: 0.3)
+                    : AppColors.grayD9.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.keyboard_arrow_down,
+                size: 16,
+                color: isDark ? AppColors.white : AppColors.blueGray374957,
               ),
             ),
           ),
+          isExpanded: true,
+          menuMaxHeight: 300,
         ),
       ],
     );

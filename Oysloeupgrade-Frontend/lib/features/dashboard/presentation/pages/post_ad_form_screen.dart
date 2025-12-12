@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:oysloe_mobile/core/common/widgets/appbar.dart';
 import 'package:oysloe_mobile/core/common/widgets/buttons.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/create_product_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/update_product_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/category_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/feature_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/subcategory_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/location_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/product_entity.dart';
+import 'package:oysloe_mobile/core/di/dependency_injection.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_state.dart';
@@ -26,8 +30,13 @@ import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/prod
 
 class PostAdFormScreen extends StatefulWidget {
   final List<String>? selectedImages;
+  final ProductEntity? productToEdit;
 
-  const PostAdFormScreen({super.key, this.selectedImages});
+  const PostAdFormScreen({
+    super.key,
+    this.selectedImages,
+    this.productToEdit,
+  });
 
   @override
   State<PostAdFormScreen> createState() => _PostAdFormScreenState();
@@ -62,13 +71,55 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
   Map<int, TextEditingController> _featureControllers = {};
   Map<int, String> _featureErrors = {};
 
+  bool get _isEditMode => widget.productToEdit != null;
+  final UpdateProductUseCase _updateProductUseCase = sl<UpdateProductUseCase>();
+
   @override
   void initState() {
     super.initState();
-    // Fetch locations when screen loads
+    
+    // Pre-fill form if editing
+    if (_isEditMode && widget.productToEdit != null) {
+      final product = widget.productToEdit!;
+      _titleController.text = product.name;
+      _descriptionController.text = product.description;
+      _priceController.text = product.price;
+      _selectedCategoryId = product.category;
+      _selectedPurpose = _mapBackendTypeToPurpose(product.type);
+      
+      // Set location if available
+      if (product.location != null) {
+        _selectedLocationId = product.location!.id;
+        _selectedRegion = product.location!.region;
+      }
+    }
+    
+    // Fetch locations when screen loads (already called in route, but ensure it happens)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LocationsCubit>().fetch();
+      final locationsCubit = context.read<LocationsCubit>();
+      print('PostAdFormScreen: Calling LocationsCubit.fetch()');
+      locationsCubit.fetch();
+      if (_isEditMode && _selectedCategoryId != null) {
+        context.read<SubcategoriesCubit>().fetch(categoryId: _selectedCategoryId);
+      }
+      if (_isEditMode && _selectedSubcategoryId != null) {
+        context.read<FeaturesCubit>().fetch(subcategoryId: _selectedSubcategoryId);
+      }
     });
+  }
+  
+  String _mapBackendTypeToPurpose(String? type) {
+    if (type == null) return 'Sale';
+    switch (type.toUpperCase()) {
+      case 'SALE':
+        return 'Sale';
+      case 'RENT':
+        return 'Rent';
+      case 'PAYLATER':
+        return 'PayLater';
+      default:
+        return 'Sale';
+    }
   }
 
   @override
@@ -102,6 +153,15 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
           labelText: 'Price',
           hintText: '₵',
           keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Price is required';
+            }
+            if (double.tryParse(value.trim()) == null) {
+              return 'Please enter a valid price';
+            }
+            return null;
+          },
         );
 
       case 'PayLater':
@@ -116,6 +176,15 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                     labelText: 'Daily',
                     hintText: '₵',
                     keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Required';
+                      }
+                      if (double.tryParse(value.trim()) == null) {
+                        return 'Invalid';
+                      }
+                      return null;
+                    },
                   ),
                 ),
                 SizedBox(width: 4.w),
@@ -147,6 +216,15 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                     labelText: 'Weekly',
                     hintText: '₵',
                     keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Required';
+                      }
+                      if (double.tryParse(value.trim()) == null) {
+                        return 'Invalid';
+                      }
+                      return null;
+                    },
                   ),
                 ),
                 SizedBox(width: 4.w),
@@ -178,6 +256,15 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                     labelText: 'Monthly',
                     hintText: '₵',
                     keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Required';
+                      }
+                      if (double.tryParse(value.trim()) == null) {
+                        return 'Invalid';
+                      }
+                      return null;
+                    },
                   ),
                 ),
                 SizedBox(width: 4.w),
@@ -213,6 +300,15 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                 labelText: 'Price',
                 hintText: '₵',
                 keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Price is required';
+                  }
+                  if (double.tryParse(value.trim()) == null) {
+                    return 'Please enter a valid price';
+                  }
+                  return null;
+                },
               ),
             ),
             SizedBox(width: 4.w),
@@ -266,7 +362,7 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
       child: Scaffold(
         backgroundColor: AppColors.grayF9,
         appBar: CustomAppBar(
-          title: 'Post Ad',
+          title: _isEditMode ? 'Edit Ad' : 'Post Ad',
           backgroundColor: AppColors.white,
         ),
         body: Form(
@@ -425,6 +521,12 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   controller: _titleController,
                   labelText: 'Title',
                   hintText: 'Add a title',
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Title is required';
+                    }
+                    return null;
+                  },
                 ),
                 SizedBox(height: 3.h),
                 Text(
@@ -478,19 +580,53 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                           },
                         ),
                         if (locationsState.isLoading)
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Center(
-                              child: CircularProgressIndicator(),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                SizedBox(width: 2.w),
+                                Text(
+                                  'Loading regions from server...',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.gray8B959E,
+                                  ),
+                                ),
+                              ],
                             ),
                           )
                         else if (locationsState.hasError)
                           Padding(
                             padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline, 
+                                  color: Colors.red, 
+                                  size: 16,
+                                ),
+                                SizedBox(width: 2.w),
+                                Expanded(
+                                  child: Text(
+                                    'Unable to load regions: ${locationsState.message ?? "Unknown error"}',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (!locationsState.hasRegions && locationsState.status == LocationsStatus.success)
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              'Unable to load regions',
+                              'No regions available. Please contact support.',
                               style: AppTypography.bodySmall.copyWith(
-                                color: Colors.red,
+                                color: AppColors.gray8B959E,
                               ),
                             ),
                           ),
@@ -641,6 +777,12 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   hintText: 'Type more',
                   maxLines: 4,
                   maxLength: 500,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Description is required';
+                    }
+                    return null;
+                  },
                 ),
                 SizedBox(height: 6.w),
                 BlocBuilder<ProductsCubit, ProductsState>(
@@ -760,16 +902,148 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
     );
   }
 
-  void _handleFinish() {
+  Future<void> _handleFinish() async {
     // Validate the form first
-    if (_formKey.currentState?.validate() ?? false) {
-      if (_selectedCategoryId == null) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Additional validation for required fields
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Title is required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_descriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Description is required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Validate price based on purpose type
+    if (_selectedPurpose == 'PayLater') {
+      // For PayLater, validate all three price fields
+      if (_dailyPriceController.text.trim().isEmpty ||
+          _weeklyPriceController.text.trim().isEmpty ||
+          _monthlyPriceController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a product category')),
+          const SnackBar(
+            content: Text('Please fill in all price fields (Daily, Weekly, Monthly)'),
+            backgroundColor: Colors.red,
+          ),
         );
         return;
       }
+      if (double.tryParse(_dailyPriceController.text.trim()) == null ||
+          double.tryParse(_weeklyPriceController.text.trim()) == null ||
+          double.tryParse(_monthlyPriceController.text.trim()) == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter valid prices for all fields'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    } else {
+      // For Sale and Rent, validate single price field
+      if (_priceController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Price is required'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (double.tryParse(_priceController.text.trim()) == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid price'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
 
+    if (_selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a product category'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_isEditMode && widget.productToEdit != null) {
+      // Update existing product
+      final result = await _updateProductUseCase(
+        UpdateProductParams(
+          productId: widget.productToEdit!.id,
+          name: _titleController.text,
+          description: _descriptionController.text,
+          price: _priceController.text,
+          type: _mapPurposeToBackendType(_selectedPurpose),
+          category: _selectedCategoryId,
+          duration: _durationController.text.isEmpty 
+              ? null 
+              : _durationController.text,
+          images: widget.selectedImages,
+          status: widget.productToEdit!.status, // Keep current status
+        ),
+      );
+
+      if (!mounted) return;
+
+      result.fold(
+        (failure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                failure.message.isEmpty
+                    ? 'Failed to update ad'
+                    : failure.message,
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        },
+        (updatedProduct) {
+          final isPending = widget.productToEdit!.status.toLowerCase() == 'pending';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isPending
+                    ? 'Ad updated successfully! Your changes are visible to admin for review. The ad remains in Pending tab.'
+                    : 'Ad updated successfully! Changes will be reviewed by admin.',
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          // Navigate back to Ads screen with success flag
+          context.pop(true);
+        },
+      );
+    } else {
+      // Create new product
       final params = CreateProductParams(
         name: _titleController.text,
         description: _descriptionController.text,
@@ -782,10 +1056,6 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
 
       final productsCubit = context.read<ProductsCubit>();
       productsCubit.createProduct(params);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fix the errors in the form')),
-      );
     }
   }
 

@@ -118,6 +118,9 @@ class _RegionSelectSheetState extends State<RegionSelectSheet> {
                   locationsByRegion.putIfAbsent(region, () => []).add(location);
                 }
 
+                // Calculate total locations count
+                final totalLocationsCount = state.locations.length;
+
                 return SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: 4.w),
                   child: Column(
@@ -170,56 +173,61 @@ class _RegionSelectSheetState extends State<RegionSelectSheet> {
           ),
 
           // Bottom buttons
-          Container(
-            padding: EdgeInsets.all(4.w),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.grayE4,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Clear all',
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.blueGray374957,
-                        fontWeight: FontWeight.w600,
-                      ),
+          BlocBuilder<LocationsCubit, LocationsState>(
+            builder: (context, state) {
+              final totalLocationsCount = state.locations.length;
+              return Container(
+                padding: EdgeInsets.all(4.w),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  border: Border(
+                    top: BorderSide(
+                      color: AppColors.grayE4,
+                      width: 1,
                     ),
                   ),
                 ),
-                SizedBox(width: 3.w),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF142032),
-                      foregroundColor: AppColors.white,
-                      padding: EdgeInsets.symmetric(vertical: 1.8.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'View all (456k)',
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w600,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Clear all',
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.blueGray374957,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    SizedBox(width: 3.w),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF142032),
+                          foregroundColor: AppColors.white,
+                          padding: EdgeInsets.symmetric(vertical: 1.8.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'View all ($totalLocationsCount)',
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),

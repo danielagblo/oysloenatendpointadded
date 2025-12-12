@@ -10,9 +10,17 @@ class LocationsCubit extends Cubit<LocationsState> {
   final GetLocationsUseCase _getLocations;
 
   Future<void> fetch() async {
-    if (state.isLoading) return;
-    if (state.hasData) return; // Only fetch once
+    print('LocationsCubit.fetch() called');
+    if (state.isLoading) {
+      print('LocationsCubit: Already loading, skipping');
+      return;
+    }
+    if (state.hasData) {
+      print('LocationsCubit: Already has data, skipping');
+      return; // Only fetch once
+    }
 
+    print('LocationsCubit: Starting fetch...');
     emit(
       state.copyWith(
         status: LocationsStatus.loading,
@@ -20,7 +28,9 @@ class LocationsCubit extends Cubit<LocationsState> {
       ),
     );
 
+    print('LocationsCubit: Calling use case...');
     final result = await _getLocations();
+    print('LocationsCubit: Use case returned');
 
     result.fold(
       (failure) => emit(
@@ -32,12 +42,16 @@ class LocationsCubit extends Cubit<LocationsState> {
       ),
       (locations) {
         // Extract unique regions
+        print('LocationsCubit: Received ${locations.length} locations');
         final regions = <String>{};
         for (var location in locations) {
+          print('Location: id=${location.id}, name=${location.name}, region=${location.region}');
           if (location.region != null && location.region!.isNotEmpty) {
             regions.add(location.region!);
           }
         }
+
+        print('LocationsCubit: Extracted ${regions.length} unique regions: $regions');
 
         emit(
           state.copyWith(

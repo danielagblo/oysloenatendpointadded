@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_state.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/location_entity.dart';
 
 class AreaSelectSheet extends StatefulWidget {
   final String regionName;
@@ -20,35 +24,17 @@ class AreaSelectSheet extends StatefulWidget {
 class _AreaSelectSheetState extends State<AreaSelectSheet> {
   late List<String> _selectedItems;
   final TextEditingController _searchController = TextEditingController();
-  List<_AreaItem> _filteredAreas = [];
-
-  final Map<String, List<_AreaItem>> _areasMap = {
-    'Greater Accra': [
-      _AreaItem(name: 'Accra', count: '879', isPopular: true),
-      _AreaItem(name: 'Kwame Nkrumah Circle', count: '8799', isPopular: true),
-      _AreaItem(name: 'Spintex', count: '98k', isPopular: true),
-      _AreaItem(name: 'Kanieshie', count: '89799k', isPopular: false),
-      _AreaItem(name: 'Afienya', count: '90k', isPopular: false),
-      _AreaItem(name: 'Domenya', count: '90', isPopular: false),
-      _AreaItem(name: 'Fashion', count: '8k', isPopular: false),
-      _AreaItem(name: 'Accra', count: '7k', isPopular: false),
-      _AreaItem(name: 'Kwame Nkrumah Circle', count: '745', isPopular: false),
-      _AreaItem(name: 'Spintex', count: '1k', isPopular: false),
-    ],
-    // Add other regions as needed
-  };
-
-  List<_AreaItem> get _popularAreas =>
-      (_areasMap[widget.regionName] ?? []).where((area) => area.isPopular).toList();
-
-  List<_AreaItem> get _otherAreas =>
-      (_areasMap[widget.regionName] ?? []).where((area) => !area.isPopular).toList();
+  List<LocationEntity> _filteredAreas = [];
+  List<LocationEntity> _allAreas = [];
 
   @override
   void initState() {
     super.initState();
     _selectedItems = widget.selectedAreas ?? [];
-    _filteredAreas = _areasMap[widget.regionName] ?? [];
+    // Fetch locations when sheet opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LocationsCubit>().fetch();
+    });
   }
 
   @override
@@ -60,9 +46,9 @@ class _AreaSelectSheetState extends State<AreaSelectSheet> {
   void _filterAreas(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredAreas = _areasMap[widget.regionName] ?? [];
+        _filteredAreas = _allAreas;
       } else {
-        _filteredAreas = (_areasMap[widget.regionName] ?? [])
+        _filteredAreas = _allAreas
             .where((item) =>
                 item.name.toLowerCase().contains(query.toLowerCase()))
             .toList();
@@ -176,75 +162,77 @@ class _AreaSelectSheetState extends State<AreaSelectSheet> {
 
           // Areas list
           Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Popular areas (if not searching)
-                  if (_searchController.text.isEmpty && _popularAreas.isNotEmpty) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.grayF9,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.grayD9.withValues(alpha: 0.3),
-                            blurRadius: 2,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
+            child: BlocBuilder<LocationsCubit, LocationsState>(
+              builder: (context, state) {
+                if (state.isLoading && !state.hasData) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
                       ),
+                    ),
+                  );
+                }
+
+                if (state.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
                       child: Text(
-                        'Popular areas',
-                        style: AppTypography.bodySmall.copyWith(
+                        state.message ?? 'Failed to load locations',
+                        style: AppTypography.body.copyWith(
                           color: AppColors.gray8B959E,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    SizedBox(height: 1.h),
-                    ..._popularAreas.map((area) => _buildAreaItem(area)),
-                    SizedBox(height: 2.h),
-                  ],
+                  );
+                }
 
-                  // Other areas
-                  if (_searchController.text.isEmpty && _otherAreas.isNotEmpty) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.grayF9,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.grayD9.withValues(alpha: 0.3),
-                            blurRadius: 2,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
+                // Filter locations by region
+                final regionLocations = state.locations
+                    .where((loc) => loc.region == widget.regionName)
+                    .toList();
+
+                // Update local state when data is available
+                if (state.hasData && _allAreas.isEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    setState(() {
+                      _allAreas = regionLocations;
+                      _filteredAreas = regionLocations;
+                    });
+                  });
+                }
+
+                final displayList = _filteredAreas.isEmpty && _searchController.text.isEmpty
+                    ? regionLocations
+                    : _filteredAreas;
+
+                if (displayList.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
                       child: Text(
-                        'Other areas',
-                        style: AppTypography.bodySmall.copyWith(
+                        'No locations available for this region',
+                        style: AppTypography.body.copyWith(
                           color: AppColors.gray8B959E,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    SizedBox(height: 1.h),
-                    ..._otherAreas.map((area) => _buildAreaItem(area)),
-                  ],
+                  );
+                }
 
-                  // Search results
-                  if (_searchController.text.isNotEmpty)
-                    ..._filteredAreas.map((area) => _buildAreaItem(area)),
-
-                  SizedBox(height: 2.h),
-                ],
-              ),
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 4.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...displayList.map((location) => _buildAreaItem(location)),
+                      SizedBox(height: 2.h),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
 
@@ -288,12 +276,22 @@ class _AreaSelectSheetState extends State<AreaSelectSheet> {
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      'View all (${_selectedItems.isEmpty ? '456k' : _selectedItems.length})',
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: BlocBuilder<LocationsCubit, LocationsState>(
+                      builder: (context, state) {
+                        final regionLocationsCount = state.locations
+                            .where((loc) => loc.region == widget.regionName)
+                            .length;
+                        final displayCount = _selectedItems.isEmpty 
+                            ? regionLocationsCount 
+                            : _selectedItems.length;
+                        return Text(
+                          'View all ($displayCount)',
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -305,11 +303,11 @@ class _AreaSelectSheetState extends State<AreaSelectSheet> {
     );
   }
 
-  Widget _buildAreaItem(_AreaItem area) {
-    final isSelected = _selectedItems.contains(area.name);
+  Widget _buildAreaItem(LocationEntity location) {
+    final isSelected = _selectedItems.contains(location.name);
 
     return InkWell(
-      onTap: () => _toggleSelection(area.name),
+      onTap: () => _toggleSelection(location.name),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 1.5.h),
         child: Row(
@@ -317,7 +315,7 @@ class _AreaSelectSheetState extends State<AreaSelectSheet> {
             // Area name
             Expanded(
               child: Text(
-                area.name,
+                location.name,
                 style: AppTypography.body.copyWith(
                   fontWeight: FontWeight.w500,
                   color: AppColors.blueGray374957,
@@ -325,13 +323,6 @@ class _AreaSelectSheetState extends State<AreaSelectSheet> {
               ),
             ),
 
-            // Count
-            Text(
-              area.count,
-              style: AppTypography.body.copyWith(
-                color: AppColors.gray8B959E,
-              ),
-            ),
             SizedBox(width: 3.w),
 
             // Checkbox
@@ -365,34 +356,29 @@ class _AreaSelectSheetState extends State<AreaSelectSheet> {
   }
 }
 
-class _AreaItem {
-  final String name;
-  final String count;
-  final bool isPopular;
-
-  const _AreaItem({
-    required this.name,
-    required this.count,
-    this.isPopular = false,
-  });
-}
 
 Future<List<String>?> showAreaSelectSheet(
   BuildContext context, {
   required String regionName,
   List<String>? selectedAreas,
 }) {
+  // Capture BLoC instance before building the bottom sheet
+  final locationsCubit = context.read<LocationsCubit>();
+
   return showModalBottomSheet<List<String>>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) => AreaSelectSheet(
-        regionName: regionName,
-        selectedAreas: selectedAreas,
+    builder: (bottomSheetContext) => BlocProvider.value(
+      value: locationsCubit,
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => AreaSelectSheet(
+          regionName: regionName,
+          selectedAreas: selectedAreas,
+        ),
       ),
     ),
   );

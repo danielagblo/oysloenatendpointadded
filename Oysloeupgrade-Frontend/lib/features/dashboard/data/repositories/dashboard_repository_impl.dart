@@ -33,6 +33,7 @@ import '../models/location_model.dart';
 import '../models/alert_model.dart';
 import '../../domain/entities/referral_entity.dart';
 import '../../domain/entities/static_page_entity.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 
 class DashboardRepositoryImpl implements DashboardRepository {
   static const Duration _categoriesCacheTtl = Duration(hours: 12);
@@ -49,6 +50,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required ChatRemoteDataSource chatRemoteDataSource,
     required ReferralRemoteDataSource referralRemoteDataSource,
     required StaticPagesRemoteDataSource staticPagesRemoteDataSource,
+    required AuthRepository authRepository,
     required Network network,
   })  : _remoteDataSource = remoteDataSource,
         _categoriesRemoteDataSource = categoriesRemoteDataSource,
@@ -62,6 +64,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
         _chatRemoteDataSource = chatRemoteDataSource,
         _referralRemoteDataSource = referralRemoteDataSource,
         _staticPagesRemoteDataSource = staticPagesRemoteDataSource,
+        _authRepository = authRepository,
         _network = network;
 
   final ProductsRemoteDataSource _remoteDataSource;
@@ -76,6 +79,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   final ChatRemoteDataSource _chatRemoteDataSource;
   final ReferralRemoteDataSource _referralRemoteDataSource;
   final StaticPagesRemoteDataSource _staticPagesRemoteDataSource;
+  final AuthRepository _authRepository;
 
   @override
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>
@@ -457,16 +461,36 @@ class DashboardRepositoryImpl implements DashboardRepository {
     }
 
     try {
-      // Fetch all products and filter by current user on the backend
-      // The API should filter by owner when authenticated
-      final List<ProductEntity> products =
-          (await _remoteDataSource.getProducts(ordering: '-created_at'))
-              .cast<ProductEntity>();
+      // Get current user profile to extract user ID
+      final userProfileResult = await _authRepository.getProfile();
 
-      // Filter to only include products owned by the current user
-      // The backend should handle this, but we filter client-side as fallback
-      // Products have an 'owner' field that should match the current user
-      return right(products);
+      // If we can't get the user profile, return empty list or error
+      int? currentUserId;
+      userProfileResult.fold(
+        (failure) => null,
+        (user) {
+          // Try to parse user ID as int
+          currentUserId = int.tryParse(user.id);
+        },
+      );
+
+      if (currentUserId == null) {
+        return left(const APIFailure('Unable to identify current user'));
+      }
+
+      // Fetch products filtered by current user's ID
+      final List<ProductEntity> products = (await _remoteDataSource.getProducts(
+        ordering: '-created_at',
+        sellerId: currentUserId,
+      ))
+          .cast<ProductEntity>();
+
+      // Client-side filter as safeguard to ensure only current user's products
+      final userProducts = products
+          .where((product) => product.sellerId == currentUserId)
+          .toList();
+
+      return right(userProducts);
     } on ApiException catch (error) {
       return left(APIFailure(error.message));
     } on ServerException catch (error) {
@@ -1148,6 +1172,78 @@ class DashboardRepositoryImpl implements DashboardRepository {
     } catch (error, stackTrace) {
       logError(
         'Unexpected create product failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProductEntity>> repostProduct({
+    required int productId,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final ProductEntity product = await _remoteDataSource.repostProduct(
+        productId: productId,
+      );
+      return right(product);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected repost product failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProductEntity>> updateProduct({
+    required int productId,
+    String? name,
+    String? description,
+    String? price,
+    String? type,
+    int? category,
+    String? duration,
+    List<String>? images,
+    String? status,
+  }) async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final ProductEntity product = await _remoteDataSource.updateProduct(
+        productId: productId,
+        name: name,
+        description: description,
+        price: price,
+        type: type,
+        category: category,
+        duration: duration,
+        images: images,
+        status: status,
+      );
+      return right(product);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected update product failure',
         error: error,
         stackTrace: stackTrace,
       );

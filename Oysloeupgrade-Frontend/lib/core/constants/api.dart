@@ -34,6 +34,8 @@ class AppStrings {
   static String productFavouriteURL(String id) =>
       '$apiBasePath/products/$id/favourite/';
   static const String favouritesURL = '$apiBasePath/products/favourites/';
+  static String repostProductURL(String id) =>
+      '$apiBasePath/products/$id/repost-ad/';
 
   // Reviews
   static const String reviewsURL = '$apiBasePath/reviews/';

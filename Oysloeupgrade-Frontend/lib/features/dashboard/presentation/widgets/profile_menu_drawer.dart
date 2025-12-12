@@ -39,27 +39,30 @@ class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
   void initState() {
     super.initState();
     _hydrateSession();
-    _loadProductCounts();
   }
 
   Future<void> _hydrateSession() async {
     final AuthRepository repository = sl<AuthRepository>();
-    
+
     // First, get current/cached session
-    final session = repository.currentSession ?? await repository.cachedSession();
+    final session =
+        repository.currentSession ?? await repository.cachedSession();
     if (session != null) {
       if (mounted) {
         setState(() {
           _hasSession = true;
           _user = session.user;
+          // Use backend counts if available
+          _activeAdsCount = session.user.activeAds ?? 0;
+          _takenAdsCount = session.user.takenAds ?? 0;
         });
       }
     }
-    
+
     // Then fetch fresh profile from server
     final profileResult = await repository.getProfile();
     if (!mounted) return;
-    
+
     profileResult.fold(
       (failure) {
         // If fetch fails, keep cached data
@@ -69,30 +72,9 @@ class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
         setState(() {
           _user = freshUser;
           _hasSession = true;
-        });
-      },
-    );
-  }
-
-  Future<void> _loadProductCounts() async {
-    final getUserProductsUseCase = sl<GetUserProductsUseCase>();
-    final result = await getUserProductsUseCase(const NoParams());
-    
-    if (!mounted) return;
-    
-    result.fold(
-      (failure) {
-        debugPrint('Failed to load product counts: ${failure.message}');
-      },
-      (products) {
-        final activeCount = products
-            .where((p) => p.status.toLowerCase() == 'active' && !p.isTaken)
-            .length;
-        final takenCount = products.where((p) => p.isTaken).length;
-        
-        setState(() {
-          _activeAdsCount = activeCount;
-          _takenAdsCount = takenCount;
+          // Use backend counts if available
+          _activeAdsCount = freshUser.activeAds ?? 0;
+          _takenAdsCount = freshUser.takenAds ?? 0;
         });
       },
     );
@@ -135,8 +117,7 @@ class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
                           label: 'Yes logout',
                           filled: true,
                           fillColor: AppColors.white,
-                          borderColor:
-                              AppColors.grayD9.withValues(alpha: 0.35),
+                          borderColor: AppColors.grayD9.withValues(alpha: 0.35),
                           textColor: AppColors.blueGray374957,
                           onPressed: () => Navigator.of(
                             context,
@@ -191,7 +172,6 @@ class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
                     ),
                   ),
                 ),
-
                 SizedBox(height: 2.h),
               ],
 
@@ -336,7 +316,8 @@ class _ProfileMenuDrawerState extends State<ProfileMenuDrawer> {
                     context: context,
                     isScrollControlled: true,
                     shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(24)),
                     ),
                     builder: (sheetContext) {
                       return const _AccountDeleteRequestSheet();
@@ -450,7 +431,7 @@ class _AvatarImage extends StatelessWidget {
     final String trimmed = (avatarUrl ?? '').trim();
     debugPrint('🔍 Avatar URL received: "$avatarUrl"');
     debugPrint('🔍 Avatar URL trimmed: "$trimmed"');
-    
+
     if (trimmed.isEmpty) {
       debugPrint('⚠️ Avatar URL is empty, showing default icon');
       return SvgPicture.asset(
@@ -711,16 +692,16 @@ class _AccountDeleteRequestSheetState
                           ),
                   ),
                 ),
-              if (state.hasPendingRequest) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Your account deletion request is currently pending review. '
-                  'You cannot submit another request until this one is processed.',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.blueGray263238.withValues(alpha: 0.7),
+                if (state.hasPendingRequest) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your account deletion request is currently pending review. '
+                    'You cannot submit another request until this one is processed.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.blueGray263238.withValues(alpha: 0.7),
+                    ),
                   ),
-                ),
-              ],
+                ],
                 if (state.requests.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(
@@ -818,4 +799,3 @@ class _AccountDeleteRequestSheetState
     );
   }
 }
-

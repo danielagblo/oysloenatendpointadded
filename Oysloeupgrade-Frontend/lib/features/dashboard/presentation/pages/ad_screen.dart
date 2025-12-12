@@ -14,7 +14,9 @@ import 'package:oysloe_mobile/core/utils/formatters.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/entities/product_entity.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/get_user_products_usecase.dart';
 import 'package:oysloe_mobile/features/dashboard/domain/usecases/delete_product_usecase.dart';
-import 'package:oysloe_mobile/features/dashboard/domain/usecases/set_product_status_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/repost_product_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/update_product_usecase.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/usecases/mark_product_as_taken_usecase.dart';
 
 class AdScreen extends StatefulWidget {
   const AdScreen({super.key, this.initialTab = 0});
@@ -36,8 +38,10 @@ class _AdScreenState extends State<AdScreen>
   final GetUserProductsUseCase _getUserProductsUseCase =
       sl<GetUserProductsUseCase>();
   final DeleteProductUseCase _deleteProductUseCase = sl<DeleteProductUseCase>();
-  final SetProductStatusUseCase _setProductStatusUseCase =
-      sl<SetProductStatusUseCase>();
+  final RepostProductUseCase _repostProductUseCase = sl<RepostProductUseCase>();
+  final UpdateProductUseCase _updateProductUseCase = sl<UpdateProductUseCase>();
+  final MarkProductAsTakenUseCase _markProductAsTakenUseCase =
+      sl<MarkProductAsTakenUseCase>();
 
   @override
   void initState() {
@@ -53,6 +57,7 @@ class _AdScreenState extends State<AdScreen>
     });
     _loadUserProducts();
   }
+
 
   @override
   void dispose() {
@@ -121,16 +126,35 @@ class _AdScreenState extends State<AdScreen>
     });
 
     switch (action) {
-      case 'taken':
+      case 'view':
         _navigateToAdDetail(product);
+        break;
+      case 'mark_taken':
+        _markAdAsTaken(product);
+        break;
+      case 'edit':
+        _editAd(product);
         break;
       case 'delete':
         _confirmAndDeleteAd(product);
         break;
-      case 'suspend':
-        _suspendAd(product);
+      case 'repost':
+        _repostAd(product);
         break;
     }
+  }
+
+  int _getCurrentTabIndex() {
+    return _tabController.index;
+  }
+
+  String _getAdStatus(ProductEntity product) {
+    if (product.isTaken) return 'taken';
+    final status = product.status.toLowerCase();
+    if (status == 'pending') return 'pending';
+    if (status == 'suspended') return 'suspended';
+    if (status == 'active') return 'active';
+    return 'active';
   }
 
   Future<void> _confirmAndDeleteAd(ProductEntity product) async {
@@ -172,32 +196,139 @@ class _AdScreenState extends State<AdScreen>
           _allProducts.removeWhere((p) => p.id == product.id);
         });
         showSuccessSnackBar(context, 'Ad deleted successfully');
+        // Refresh profile counts
+        _refreshProfileCounts();
       },
     );
   }
 
-  Future<void> _suspendAd(ProductEntity product) async {
-    final result = await _setProductStatusUseCase(
-      SetProductStatusParams(productId: product.id, status: 'suspended'),
+  Future<void> _markAdAsTaken(ProductEntity product) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mark as Taken'),
+        content: Text(
+            'Mark "${product.name}" as taken? The seller will be notified.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    final result = await _markProductAsTakenUseCase(
+      MarkProductAsTakenParams(productId: product.id),
     );
 
     if (!mounted) return;
 
     result.fold(
-      (failure) => showErrorSnackBar(
-        context,
-        failure.message.isEmpty ? 'Unable to suspend ad' : failure.message,
-      ),
+      (failure) {
+        setState(() => _isLoading = false);
+        showErrorSnackBar(
+          context,
+          failure.message.isEmpty
+              ? 'Unable to mark ad as taken'
+              : failure.message,
+        );
+      },
       (updatedProduct) {
         setState(() {
+          _isLoading = false;
           final index = _allProducts.indexWhere((p) => p.id == product.id);
           if (index >= 0) {
             _allProducts[index] = updatedProduct;
           }
         });
-        showSuccessSnackBar(context, 'Ad suspended successfully');
+        showSuccessSnackBar(context, 'Ad marked as taken successfully');
+        _refreshProfileCounts();
       },
     );
+  }
+
+  Future<void> _repostAd(ProductEntity product) async {
+    if (!product.isTaken) {
+      showErrorSnackBar(context, 'Only taken ads can be reposted');
+      return;
+    }
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Repost Ad'),
+        content: Text(
+            'Repost "${product.name}"? This will create a new ad pending admin review.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Repost'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    final result = await _repostProductUseCase(
+      RepostProductParams(productId: product.id),
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        setState(() => _isLoading = false);
+        showErrorSnackBar(
+          context,
+          failure.message.isEmpty
+              ? 'Unable to repost ad'
+              : failure.message,
+        );
+      },
+      (newProduct) {
+        setState(() {
+          _isLoading = false;
+          // Reload all products to show the new reposted ad in pending tab
+          _loadUserProducts();
+        });
+        showSuccessSnackBar(
+            context, 'Ad reposted successfully. Pending admin review.');
+        _refreshProfileCounts();
+      },
+    );
+  }
+
+  Future<void> _editAd(ProductEntity product) async {
+    // Navigate to edit ad screen and wait for result
+    final router = GoRouter.of(context);
+    final result = await router.pushNamed<bool>(
+      AppRouteNames.dashboardPostAdForm,
+      extra: product,
+    );
+    
+    // Refresh the ads list when returning from edit screen (if edit was successful)
+    if (result == true && mounted) {
+      _loadUserProducts();
+    }
+  }
+
+  void _refreshProfileCounts() {
+    // Profile drawer will refresh counts when reopened
+    // The counts come from backend user profile data
   }
 
   void _navigateToAdDetail(ProductEntity product) {
@@ -327,10 +458,9 @@ class _AdScreenState extends State<AdScreen>
                     duration: const Duration(milliseconds: 200),
                     opacity: isExpanded ? 1.0 : 0.0,
                     child: _HorizontalDropdownMenu(
-                      onMarkAsTaken: () => _handleMenuAction('taken', product),
-                      onDelete: () => _handleMenuAction('delete', product),
-                      onSuspend: () => _handleMenuAction('suspend', product),
-                      isTaken: product.isTaken,
+                      product: product,
+                      tabIndex: tabIndex,
+                      onAction: _handleMenuAction,
                     ),
                   ),
               ],
@@ -576,20 +706,54 @@ class _AdCard extends StatelessWidget {
 }
 
 class _HorizontalDropdownMenu extends StatelessWidget {
-  final VoidCallback onMarkAsTaken;
-  final VoidCallback onDelete;
-  final VoidCallback onSuspend;
-  final bool isTaken;
+  final ProductEntity product;
+  final int tabIndex;
+  final Function(String action, ProductEntity product) onAction;
 
   const _HorizontalDropdownMenu({
-    required this.onMarkAsTaken,
-    required this.onDelete,
-    required this.onSuspend,
-    this.isTaken = false,
+    required this.product,
+    required this.tabIndex,
+    required this.onAction,
   });
+
+  List<Map<String, dynamic>> _getMenuItems() {
+    switch (tabIndex) {
+      case 0: // Active
+        return [
+          {'text': 'View product', 'action': 'view'},
+          {'text': 'Mark as taken', 'action': 'mark_taken'},
+          {'text': 'Edit details', 'action': 'edit'},
+          {'text': 'Delete ad', 'action': 'delete'},
+        ];
+      case 1: // Pending
+        return [
+          {'text': 'View product', 'action': 'view'},
+          {'text': 'Edit details', 'action': 'edit'},
+          {'text': 'Delete ad', 'action': 'delete'},
+        ];
+      case 2: // Taken
+        return [
+          {'text': 'View product', 'action': 'view'},
+          {'text': 'Repost ad', 'action': 'repost'},
+          {'text': 'Delete ad', 'action': 'delete'},
+        ];
+      case 3: // Suspended
+        return [
+          {'text': 'View product', 'action': 'view'},
+          {'text': 'Delete ad', 'action': 'delete'},
+        ];
+      default:
+        return [
+          {'text': 'View product', 'action': 'view'},
+          {'text': 'Delete ad', 'action': 'delete'},
+        ];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final items = _getMenuItems();
+    
     return Container(
       margin: EdgeInsets.only(bottom: 0.6.h),
       padding: EdgeInsets.symmetric(vertical: 3.w, horizontal: 4.w),
@@ -599,26 +763,14 @@ class _HorizontalDropdownMenu extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Expanded(
+        children: items.map((item) {
+          return Expanded(
             child: _MenuButton(
-              text: isTaken ? 'View ad' : 'Mark as taken',
-              onTap: onMarkAsTaken,
+              text: item['text'] as String,
+              onTap: () => onAction(item['action'] as String, product),
             ),
-          ),
-          Expanded(
-            child: _MenuButton(
-              text: 'Delete ad',
-              onTap: onDelete,
-            ),
-          ),
-          Expanded(
-            child: _MenuButton(
-              text: 'Suspend',
-              onTap: onSuspend,
-            ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }

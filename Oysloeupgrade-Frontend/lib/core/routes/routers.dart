@@ -231,7 +231,17 @@ final List<RouteBase> routes = <RouteBase>[
             name: AppRouteNames.dashboardPostAdForm,
             path: AppRoutePaths.dashboardPostAdForm,
             pageBuilder: (context, state) {
-              final selectedImages = state.extra as List<String>?;
+              // Handle both List<String>? (images) and ProductEntity (edit mode)
+              final extra = state.extra;
+              List<String>? selectedImages;
+              ProductEntity? productToEdit;
+              
+              if (extra is List<String>?) {
+                selectedImages = extra;
+              } else if (extra is ProductEntity) {
+                productToEdit = extra;
+              }
+              
               return buildPageWithDefaultTransition(
                 context: context,
                 state: state,
@@ -253,7 +263,10 @@ final List<RouteBase> routes = <RouteBase>[
                       create: (_) => sl<LocationsCubit>()..fetch(),
                     ),
                   ],
-                  child: PostAdFormScreen(selectedImages: selectedImages),
+                  child: PostAdFormScreen(
+                    selectedImages: selectedImages,
+                    productToEdit: productToEdit,
+                  ),
                 ),
               );
             },

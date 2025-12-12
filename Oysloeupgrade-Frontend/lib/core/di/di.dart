@@ -150,6 +150,7 @@ Future<void> _initDashboard() async {
         chatRemoteDataSource: sl(),
         referralRemoteDataSource: sl(),
         staticPagesRemoteDataSource: sl(),
+        authRepository: sl(),
         network: sl(),
       ),
     )
@@ -242,6 +243,12 @@ Future<void> _initDashboard() async {
     )
     ..registerLazySingleton<DeleteProductUseCase>(
       () => DeleteProductUseCase(sl()),
+    )
+    ..registerLazySingleton<RepostProductUseCase>(
+      () => RepostProductUseCase(sl()),
+    )
+    ..registerLazySingleton<UpdateProductUseCase>(
+      () => UpdateProductUseCase(sl()),
     )
     ..registerLazySingleton<MarkAlertReadUseCase>(
       () => MarkAlertReadUseCase(sl()),
