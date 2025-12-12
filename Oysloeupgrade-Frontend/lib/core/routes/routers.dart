@@ -159,6 +159,12 @@ final List<RouteBase> routes = <RouteBase>[
                 BlocProvider(
                   create: (_) => sl<CategoriesCubit>()..fetch(),
                 ),
+                BlocProvider(
+                  create: (_) => sl<SubcategoriesCubit>(),
+                ),
+                BlocProvider(
+                  create: (_) => sl<LocationsCubit>()..fetch(),
+                ),
               ],
               child: const AnimatedHomeScreen(),
             ),

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/subcategory_select_sheet.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_state.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/subcategories/subcategories_cubit.dart';
 
 class CategorySelectSheet extends StatefulWidget {
   final String? selectedCategory;
-  final Function(String category, List<String> subcategories)? onSubcategoriesSelected;
+  final Function(String category, List<String> subcategories)?
+      onSubcategoriesSelected;
 
   const CategorySelectSheet({
     super.key,
@@ -19,55 +24,41 @@ class CategorySelectSheet extends StatefulWidget {
 }
 
 class _CategorySelectSheetState extends State<CategorySelectSheet> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch categories when sheet opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoriesCubit>().fetch();
+    });
+  }
 
-  final List<_CategoryItem> _categories = const [
-    _CategoryItem(
-      name: 'Electronics',
-      icon: 'assets/images/electronics.png',
-      count: '98k',
-    ),
-    _CategoryItem(
-      name: 'Vehicles',
-      icon: 'assets/images/vehicle.png',
-      count: '879',
-    ),
-    _CategoryItem(
-      name: 'Fashion',
-      icon: 'assets/images/fashion.png',
-      count: '8799',
-    ),
-    _CategoryItem(
-      name: 'Property',
-      icon: 'assets/images/property.png',
-      count: '98k',
-    ),
-    _CategoryItem(
-      name: 'Sporting',
-      icon: 'assets/images/games.png',
-      count: '98k',
-    ),
-    _CategoryItem(
-      name: 'Industry',
-      icon: 'assets/images/industrial.png',
-      count: '89799k',
-    ),
-    _CategoryItem(
-      name: 'Furniture',
-      icon: 'assets/images/furniture.png',
-      count: '90k',
-    ),
-    _CategoryItem(
-      name: 'Cosmetics',
-      icon: 'assets/images/cosmetics.png',
-      count: '90',
-    ),
-    _CategoryItem(
-      name: 'Grocery',
-      icon: 'assets/images/grocery.png',
-      count: '8k',
-    ),
-  ];
+  String _getCategoryAsset(String categoryName) {
+    final name = categoryName.toLowerCase().trim();
 
+    const Map<String, String> assetByName = {
+      'electronics': 'assets/images/electronics.png',
+      'furniture': 'assets/images/furniture.png',
+      'vehicle': 'assets/images/vehicle.png',
+      'cars': 'assets/images/vehicle.png',
+      'automobile': 'assets/images/vehicle.png',
+      'industry': 'assets/images/industrial.png',
+      'industrial': 'assets/images/industrial.png',
+      'fashion': 'assets/images/fashion.png',
+      'clothing': 'assets/images/fashion.png',
+      'grocery': 'assets/images/grocery.png',
+      'food': 'assets/images/grocery.png',
+      'games': 'assets/images/games.png',
+      'gaming': 'assets/images/games.png',
+      'cosmetics': 'assets/images/cosmetics.png',
+      'beauty': 'assets/images/cosmetics.png',
+      'property': 'assets/images/property.png',
+      'real estate': 'assets/images/property.png',
+      'services': 'assets/images/services.png',
+    };
+
+    return assetByName[name] ?? 'assets/images/services.png';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,91 +100,124 @@ class _CategorySelectSheetState extends State<CategorySelectSheet> {
 
           // Categories list
           Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              itemCount: _categories.length,
-              separatorBuilder: (context, index) => Divider(
-                color: AppColors.grayE4,
-                height: 1,
-                thickness: 1,
-              ),
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-
-                return InkWell(
-                  onTap: () async {
-                    // If Electronics, close this sheet and show subcategory sheet
-                    if (category.name == 'Electronics') {
-                      // Close category sheet first
-                      Navigator.pop(context);
-                      // Show subcategory sheet
-                      final subcategories = await showSubcategorySelectSheet(
-                        context,
-                        categoryName: category.name,
-                      );
-                      if (subcategories != null) {
-                        // Notify parent about subcategories selection
-                        if (widget.onSubcategoriesSelected != null) {
-                          widget.onSubcategoriesSelected!(category.name, subcategories);
-                        }
-                      }
-                    } else {
-                      // For other categories, immediately select and close
-                      Navigator.pop(context, category.name);
-                    }
-                  },
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 1.8.h),
-                    child: Row(
-                      children: [
-                        // Category icon
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.grayF9,
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(8),
-                          child: Image.asset(
-                            category.icon,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                        SizedBox(width: 3.w),
-
-                        // Category name
-                        Expanded(
-                          child: Text(
-                            category.name,
-                            style: AppTypography.body.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.blueGray374957,
-                            ),
-                          ),
-                        ),
-
-                        // Count
-                        Text(
-                          category.count,
-                          style: AppTypography.body.copyWith(
-                            color: AppColors.gray8B959E,
-                          ),
-                        ),
-                        
-                        // Show chevron for categories with subcategories
-                        if (category.name == 'Electronics') ...[
-                          SizedBox(width: 2.w),
-                          Icon(
-                            Icons.chevron_right,
-                            color: AppColors.gray8B959E,
-                            size: 20,
-                          ),
-                        ],
-                      ],
+            child: BlocBuilder<CategoriesCubit, CategoriesState>(
+              builder: (context, state) {
+                if (state.isLoading && !state.hasData) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
                     ),
+                  );
+                }
+
+                if (state.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: Text(
+                        state.message ?? 'Failed to load categories',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.gray8B959E,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                if (!state.hasData || state.categories.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: Text(
+                        'No categories available',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.gray8B959E,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.symmetric(horizontal: 4.w),
+                  itemCount: state.categories.length,
+                  separatorBuilder: (context, index) => Divider(
+                    color: AppColors.grayE4,
+                    height: 1,
+                    thickness: 1,
                   ),
+                  itemBuilder: (context, index) {
+                    final category = state.categories[index];
+
+                    return InkWell(
+                      onTap: () async {
+                        // Close category sheet first
+                        Navigator.pop(context);
+                        // Show subcategory sheet for category selection
+                        final subcategories = await showSubcategorySelectSheet(
+                          context,
+                          categoryId: category.id,
+                          categoryName: category.name,
+                        );
+                        if (subcategories != null && subcategories.isNotEmpty) {
+                          // Notify parent about subcategories selection
+                          if (widget.onSubcategoriesSelected != null) {
+                            widget.onSubcategoriesSelected!(
+                                category.name, subcategories);
+                          }
+                        } else if (subcategories != null) {
+                          // Empty list means user wants just the category without subcategories
+                          if (widget.onSubcategoriesSelected != null) {
+                            widget.onSubcategoriesSelected!(category.name, []);
+                          }
+                        }
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 1.8.h),
+                        child: Row(
+                          children: [
+                            // Category icon
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                color: AppColors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(6),
+                              child: Image.asset(
+                                _getCategoryAsset(category.name),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            SizedBox(width: 3.w),
+
+                            // Category name
+                            Expanded(
+                              child: Text(
+                                category.name,
+                                style: AppTypography.body.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.blueGray374957,
+                                ),
+                              ),
+                            ),
+
+                            // Chevron icon
+                            Icon(
+                              Icons.chevron_right,
+                              color: AppColors.gray8B959E,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -204,36 +228,34 @@ class _CategorySelectSheetState extends State<CategorySelectSheet> {
   }
 }
 
-class _CategoryItem {
-  final String name;
-  final String icon;
-  final String count;
-
-  const _CategoryItem({
-    required this.name,
-    required this.icon,
-    required this.count,
-  });
-}
-
 Future<String?> showCategorySelectSheet(
   BuildContext context, {
   String? selectedCategory,
-  Function(String category, List<String> subcategories)? onSubcategoriesSelected,
+  Function(String category, List<String> subcategories)?
+      onSubcategoriesSelected,
 }) {
+  // Capture BLoC instances before building the bottom sheet
+  final categoriesCubit = context.read<CategoriesCubit>();
+  final subcategoriesCubit = context.read<SubcategoriesCubit>();
+
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => CategorySelectSheet(
-        selectedCategory: selectedCategory,
-        onSubcategoriesSelected: onSubcategoriesSelected,
+    builder: (bottomSheetContext) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: categoriesCubit),
+        BlocProvider.value(value: subcategoriesCubit),
+      ],
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => CategorySelectSheet(
+          selectedCategory: selectedCategory,
+          onSubcategoriesSelected: onSubcategoriesSelected,
+        ),
       ),
     ),
   );
 }
-

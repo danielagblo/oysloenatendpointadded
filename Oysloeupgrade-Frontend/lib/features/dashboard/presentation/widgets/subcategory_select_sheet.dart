@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/subcategories/subcategories_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/subcategories/subcategories_state.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/subcategory_entity.dart';
 
 class SubcategorySelectSheet extends StatefulWidget {
+  final int categoryId;
   final String categoryName;
   final List<String>? selectedSubcategories;
 
   const SubcategorySelectSheet({
     super.key,
+    required this.categoryId,
     required this.categoryName,
     this.selectedSubcategories,
   });
@@ -20,31 +26,17 @@ class SubcategorySelectSheet extends StatefulWidget {
 class _SubcategorySelectSheetState extends State<SubcategorySelectSheet> {
   late List<String> _selectedItems;
   final TextEditingController _searchController = TextEditingController();
-  List<_SubcategoryItem> _filteredSubcategories = [];
-
-  final Map<String, List<_SubcategoryItem>> _subcategoriesMap = {
-    'Electronics': [
-      _SubcategoryItem(name: 'Smartphones', count: '98k'),
-      _SubcategoryItem(name: 'Feature phones', count: '879'),
-      _SubcategoryItem(name: 'Tablets', count: '8799'),
-      _SubcategoryItem(name: 'Smartwatches', count: '98k'),
-      _SubcategoryItem(name: 'Phone cases & covers', count: '98k'),
-      _SubcategoryItem(name: 'Screen protectors', count: '89799k'),
-      _SubcategoryItem(name: 'Laptop', count: '90k'),
-      _SubcategoryItem(name: 'Desktops', count: '90'),
-      _SubcategoryItem(name: 'Monitors', count: '8k'),
-      _SubcategoryItem(name: 'Computer parts ( RAM,SSD,CPU,GPU)', count: '7k'),
-      _SubcategoryItem(name: 'Storage Devices ( SSD, EXTERNA..', count: '7'),
-      _SubcategoryItem(name: 'Keyboards & Mice', count: '1k'),
-    ],
-    // Add other categories as needed
-  };
+  List<SubcategoryEntity> _filteredSubcategories = [];
+  List<SubcategoryEntity> _allSubcategories = [];
 
   @override
   void initState() {
     super.initState();
     _selectedItems = widget.selectedSubcategories ?? [];
-    _filteredSubcategories = _subcategoriesMap[widget.categoryName] ?? [];
+    // Fetch subcategories when sheet opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SubcategoriesCubit>().fetch();
+    });
   }
 
   @override
@@ -56,11 +48,11 @@ class _SubcategorySelectSheetState extends State<SubcategorySelectSheet> {
   void _filterSubcategories(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredSubcategories = _subcategoriesMap[widget.categoryName] ?? [];
+        _filteredSubcategories = _allSubcategories;
       } else {
-        _filteredSubcategories = (_subcategoriesMap[widget.categoryName] ?? [])
-            .where((item) =>
-                item.name.toLowerCase().contains(query.toLowerCase()))
+        _filteredSubcategories = _allSubcategories
+            .where(
+                (item) => item.name.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
     });
@@ -172,68 +164,129 @@ class _SubcategorySelectSheetState extends State<SubcategorySelectSheet> {
 
           // Subcategories list
           Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              itemCount: _filteredSubcategories.length,
-              itemBuilder: (context, index) {
-                final subcategory = _filteredSubcategories[index];
-                final isSelected = _selectedItems.contains(subcategory.name);
+            child: BlocBuilder<SubcategoriesCubit, SubcategoriesState>(
+              builder: (context, state) {
+                if (state.isLoading && !state.hasData) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  );
+                }
 
-                return InkWell(
-                  onTap: () => _toggleSelection(subcategory.name),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 1.5.h),
-                    child: Row(
-                      children: [
-                        // Subcategory name
-                        Expanded(
-                          child: Text(
-                            subcategory.name,
-                            style: AppTypography.body.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.blueGray374957,
-                            ),
-                          ),
+                if (state.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: Text(
+                        state.message ?? 'Failed to load subcategories',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.gray8B959E,
                         ),
+                      ),
+                    ),
+                  );
+                }
 
-                        // Count
-                        Text(
-                          subcategory.count,
+                if (state.hasData) {
+                  // Filter subcategories for the selected category
+                  final categorySubcategories = state.subcategories
+                      .where((s) => s.categoryId == widget.categoryId)
+                      .toList();
+
+                  // Update local state with filtered data
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (_allSubcategories.isEmpty) {
+                      setState(() {
+                        _allSubcategories = categorySubcategories;
+                        _filteredSubcategories = categorySubcategories;
+                      });
+                    }
+                  });
+
+                  final displayList = _filteredSubcategories.isEmpty &&
+                          _searchController.text.isEmpty
+                      ? categorySubcategories
+                      : _filteredSubcategories;
+
+                  if (displayList.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(4.h),
+                        child: Text(
+                          'No subcategories available',
                           style: AppTypography.body.copyWith(
                             color: AppColors.gray8B959E,
                           ),
                         ),
-                        SizedBox(width: 3.w),
+                      ),
+                    );
+                  }
 
-                        // Checkbox
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFF4ECDC4)
-                                  : AppColors.grayD9,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                            color: isSelected
-                                ? const Color(0xFF4ECDC4)
-                                : Colors.transparent,
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.symmetric(horizontal: 4.w),
+                    itemCount: displayList.length,
+                    itemBuilder: (context, index) {
+                      final subcategory = displayList[index];
+                      final isSelected =
+                          _selectedItems.contains(subcategory.name);
+
+                      return InkWell(
+                        onTap: () => _toggleSelection(subcategory.name),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 1.5.h),
+                          child: Row(
+                            children: [
+                              // Subcategory name
+                              Expanded(
+                                child: Text(
+                                  subcategory.name,
+                                  style: AppTypography.body.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.blueGray374957,
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(width: 3.w),
+
+                              // Checkbox
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF4ECDC4)
+                                        : AppColors.grayD9,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                  color: isSelected
+                                      ? const Color(0xFF4ECDC4)
+                                      : Colors.transparent,
+                                ),
+                                child: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        color: AppColors.white,
+                                        size: 14,
+                                      )
+                                    : null,
+                              ),
+                            ],
                           ),
-                          child: isSelected
-                              ? Icon(
-                                  Icons.check,
-                                  color: AppColors.white,
-                                  size: 14,
-                                )
-                              : null,
                         ),
-                      ],
-                    ),
-                  ),
-                );
+                      );
+                    },
+                  );
+                }
+
+                return const SizedBox.shrink();
               },
             ),
           ),
@@ -279,7 +332,7 @@ class _SubcategorySelectSheetState extends State<SubcategorySelectSheet> {
                       elevation: 0,
                     ),
                     child: Text(
-                      'View all (${_selectedItems.isEmpty ? '46k' : _selectedItems.length})',
+                      'Apply${_selectedItems.isNotEmpty ? ' (${_selectedItems.length})' : ''}',
                       style: AppTypography.body.copyWith(
                         color: AppColors.white,
                         fontWeight: FontWeight.w600,
@@ -296,34 +349,31 @@ class _SubcategorySelectSheetState extends State<SubcategorySelectSheet> {
   }
 }
 
-class _SubcategoryItem {
-  final String name;
-  final String count;
-
-  const _SubcategoryItem({
-    required this.name,
-    required this.count,
-  });
-}
-
 Future<List<String>?> showSubcategorySelectSheet(
   BuildContext context, {
+  required int categoryId,
   required String categoryName,
   List<String>? selectedSubcategories,
 }) {
+  // Capture BLoC instance before building the bottom sheet
+  final subcategoriesCubit = context.read<SubcategoriesCubit>();
+
   return showModalBottomSheet<List<String>>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) => SubcategorySelectSheet(
-        categoryName: categoryName,
-        selectedSubcategories: selectedSubcategories,
+    builder: (bottomSheetContext) => BlocProvider.value(
+      value: subcategoriesCubit,
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => SubcategorySelectSheet(
+          categoryId: categoryId,
+          categoryName: categoryName,
+          selectedSubcategories: selectedSubcategories,
+        ),
       ),
     ),
   );
 }
-

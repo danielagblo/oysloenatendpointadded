@@ -1066,6 +1066,33 @@ class _CategoryBottomSheetField extends StatelessWidget {
   final int? selectedId;
   final ValueChanged<int?> onSelected;
 
+  String _getCategoryAsset(String categoryName) {
+    final name = categoryName.toLowerCase().trim();
+    
+    const Map<String, String> assetByName = {
+      'electronics': 'assets/images/electronics.png',
+      'furniture': 'assets/images/furniture.png',
+      'vehicle': 'assets/images/vehicle.png',
+      'cars': 'assets/images/vehicle.png',
+      'automobile': 'assets/images/vehicle.png',
+      'industry': 'assets/images/industrial.png',
+      'industrial': 'assets/images/industrial.png',
+      'fashion': 'assets/images/fashion.png',
+      'clothing': 'assets/images/fashion.png',
+      'grocery': 'assets/images/grocery.png',
+      'food': 'assets/images/grocery.png',
+      'games': 'assets/images/games.png',
+      'gaming': 'assets/images/games.png',
+      'cosmetics': 'assets/images/cosmetics.png',
+      'beauty': 'assets/images/cosmetics.png',
+      'property': 'assets/images/property.png',
+      'real estate': 'assets/images/property.png',
+      'services': 'assets/images/services.png',
+    };
+
+    return assetByName[name] ?? 'assets/images/services.png';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1143,11 +1170,24 @@ class _CategoryBottomSheetField extends StatelessWidget {
                             shrinkWrap: true,
                             itemCount: categoriesState.categories.length,
                             separatorBuilder: (_, __) =>
-                                const SizedBox(height: 4),
+                                const Divider(height: 1, thickness: 1, color: AppColors.grayE4),
                             itemBuilder: (context, index) {
                               final category =
                                   categoriesState.categories[index];
                               return ListTile(
+                                leading: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(6),
+                                  child: Image.asset(
+                                    _getCategoryAsset(category.name),
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
                                 title: Text(category.name),
                                 subtitle: category.description != null &&
                                         category.description!.trim().isNotEmpty
@@ -1309,7 +1349,7 @@ class _SubcategoryDropdownField extends StatelessWidget {
                             shrinkWrap: true,
                             itemCount: subcategories.length,
                             separatorBuilder: (_, __) =>
-                                const SizedBox(height: 4),
+                                const Divider(height: 1, thickness: 1, color: AppColors.grayE4),
                             itemBuilder: (context, index) {
                               final subcategory = subcategories[index];
                               return ListTile(

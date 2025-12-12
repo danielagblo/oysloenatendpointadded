@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:oysloe_mobile/core/themes/theme.dart';
 import 'package:oysloe_mobile/core/themes/typo.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/area_select_sheet.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_state.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/location_entity.dart';
 
 class RegionSelectSheet extends StatefulWidget {
   final Function(String region, List<String> areas)? onAreasSelected;
@@ -17,21 +21,14 @@ class RegionSelectSheet extends StatefulWidget {
 }
 
 class _RegionSelectSheetState extends State<RegionSelectSheet> {
-  final List<_RegionItem> _popularRegions = const [
-    _RegionItem(name: 'Greater Accra', count: '879'),
-    _RegionItem(name: 'Eastern region', count: '8799'),
-    _RegionItem(name: 'Ashanti region', count: '98k'),
-  ];
-
-  final List<_RegionItem> _otherRegions = const [
-    _RegionItem(name: 'Savannah', count: '879'),
-    _RegionItem(name: 'Afienya', count: '8799'),
-    _RegionItem(name: 'Domenya', count: '98k'),
-    _RegionItem(name: 'Fashion', count: '879'),
-    _RegionItem(name: 'Accra', count: '8799'),
-    _RegionItem(name: 'Kwame Nkrumah Circle', count: '98k'),
-    _RegionItem(name: 'Spintex', count: '98k'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Fetch locations when sheet opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LocationsCubit>().fetch();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,68 +70,102 @@ class _RegionSelectSheetState extends State<RegionSelectSheet> {
 
           // Scrollable content
           Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Popular regions
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.grayF9,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.grayD9.withValues(alpha: 0.3),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      'Popular regions',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.gray8B959E,
-                        fontWeight: FontWeight.w600,
+            child: BlocBuilder<LocationsCubit, LocationsState>(
+              builder: (context, state) {
+                if (state.isLoading && !state.hasData) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
                       ),
                     ),
-                  ),
-                  SizedBox(height: 1.h),
-                  ..._popularRegions.map((region) => _buildRegionItem(region)),
-                  
-                  SizedBox(height: 2.h),
-                  
-                  // Other regions
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.grayF9,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.grayD9.withValues(alpha: 0.3),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
+                  );
+                }
+
+                if (state.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: Text(
+                        state.message ?? 'Failed to load locations',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.gray8B959E,
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      'Other regions',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.gray8B959E,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                  );
+                }
+
+                if (!state.hasData || state.locations.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.h),
+                      child: Text(
+                        'No locations available',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.gray8B959E,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                // Group locations by region
+                final locationsByRegion = <String, List<LocationEntity>>{};
+                for (final location in state.locations) {
+                  final region = location.region ?? 'Other';
+                  locationsByRegion.putIfAbsent(region, () => []).add(location);
+                }
+
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 4.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Display each region group
+                      ...locationsByRegion.entries.map((entry) {
+                        final regionName = entry.key;
+                        final locations = entry.value;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 3.w, vertical: 1.h),
+                              decoration: BoxDecoration(
+                                color: AppColors.grayF9,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                        AppColors.grayD9.withValues(alpha: 0.3),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                regionName,
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.gray8B959E,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 1.h),
+                            ...locations
+                                .map((location) => _buildRegionItem(location)),
+                            SizedBox(height: 2.h),
+                          ],
+                        );
+                      }),
+                    ],
                   ),
-                  SizedBox(height: 1.h),
-                  ..._otherRegions.map((region) => _buildRegionItem(region)),
-                  
-                  SizedBox(height: 2.h),
-                ],
-              ),
+                );
+              },
             ),
           ),
 
@@ -195,47 +226,34 @@ class _RegionSelectSheetState extends State<RegionSelectSheet> {
     );
   }
 
-  Widget _buildRegionItem(_RegionItem region) {
+  Widget _buildRegionItem(LocationEntity location) {
     return InkWell(
-      onTap: () async {
-        // Close region sheet first
-        Navigator.pop(context);
-        // Show area selection sheet for this region
-        final areas = await showAreaSelectSheet(
-          context,
-          regionName: region.name,
-        );
-        if (areas != null && widget.onAreasSelected != null) {
-          widget.onAreasSelected!(region.name, areas);
+      onTap: () {
+        // Directly select this location and close
+        if (widget.onAreasSelected != null) {
+          widget.onAreasSelected!(
+              location.region ?? location.name, [location.name]);
         }
+        Navigator.pop(context);
       },
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 1.5.h),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              region.name,
-              style: AppTypography.body.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppColors.blueGray374957,
+            Expanded(
+              child: Text(
+                location.name,
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.blueGray374957,
+                ),
               ),
             ),
-            Row(
-              children: [
-                Text(
-                  region.count,
-                  style: AppTypography.body.copyWith(
-                    color: AppColors.gray8B959E,
-                  ),
-                ),
-                SizedBox(width: 2.w),
-                Icon(
-                  Icons.chevron_right,
-                  color: AppColors.gray8B959E,
-                  size: 20,
-                ),
-              ],
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.gray8B959E,
+              size: 20,
             ),
           ],
         ),
@@ -244,32 +262,27 @@ class _RegionSelectSheetState extends State<RegionSelectSheet> {
   }
 }
 
-class _RegionItem {
-  final String name;
-  final String count;
-
-  const _RegionItem({
-    required this.name,
-    required this.count,
-  });
-}
-
 Future<void> showRegionSelectSheet(
   BuildContext context, {
   required Function(String region, List<String> areas) onAreasSelected,
 }) {
+  // Capture BLoC instance before building the bottom sheet
+  final locationsCubit = context.read<LocationsCubit>();
+
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => RegionSelectSheet(
-        onAreasSelected: onAreasSelected,
+    builder: (bottomSheetContext) => BlocProvider.value(
+      value: locationsCubit,
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => RegionSelectSheet(
+          onAreasSelected: onAreasSelected,
+        ),
       ),
     ),
   );
 }
-
