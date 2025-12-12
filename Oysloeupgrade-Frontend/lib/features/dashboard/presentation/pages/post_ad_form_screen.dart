@@ -1068,7 +1068,7 @@ class _CategoryBottomSheetField extends StatelessWidget {
 
   String _getCategoryAsset(String categoryName) {
     final name = categoryName.toLowerCase().trim();
-    
+
     const Map<String, String> assetByName = {
       'electronics': 'assets/images/electronics.png',
       'furniture': 'assets/images/furniture.png',
@@ -1169,8 +1169,10 @@ class _CategoryBottomSheetField extends StatelessWidget {
                           child: ListView.separated(
                             shrinkWrap: true,
                             itemCount: categoriesState.categories.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1, thickness: 1, color: AppColors.grayE4),
+                            separatorBuilder: (_, __) => const Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: AppColors.grayE4),
                             itemBuilder: (context, index) {
                               final category =
                                   categoriesState.categories[index];
@@ -1348,8 +1350,10 @@ class _SubcategoryDropdownField extends StatelessWidget {
                           child: ListView.separated(
                             shrinkWrap: true,
                             itemCount: subcategories.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1, thickness: 1, color: AppColors.grayE4),
+                            separatorBuilder: (_, __) => const Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: AppColors.grayE4),
                             itemBuilder: (context, index) {
                               final subcategory = subcategories[index];
                               return ListTile(
