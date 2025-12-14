@@ -23,6 +23,7 @@ import '../datasources/locations_remote_data_source.dart';
 import '../datasources/categories_local_data_source.dart';
 import '../datasources/alerts_remote_data_source.dart';
 import '../datasources/account_delete_requests_remote_data_source.dart';
+import '../datasources/deletion_reasons_remote_data_source.dart';
 import '../datasources/chat_remote_data_source.dart';
 import '../datasources/referral_remote_data_source.dart';
 import '../datasources/static_pages_remote_data_source.dart';
@@ -47,6 +48,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required AlertsRemoteDataSource alertsRemoteDataSource,
     required AccountDeleteRequestsRemoteDataSource
         accountDeleteRequestsRemoteDataSource,
+    required DeletionReasonsRemoteDataSource deletionReasonsRemoteDataSource,
     required ChatRemoteDataSource chatRemoteDataSource,
     required ReferralRemoteDataSource referralRemoteDataSource,
     required StaticPagesRemoteDataSource staticPagesRemoteDataSource,
@@ -61,6 +63,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
         _alertsRemoteDataSource = alertsRemoteDataSource,
         _accountDeleteRequestsRemoteDataSource =
             accountDeleteRequestsRemoteDataSource,
+        _deletionReasonsRemoteDataSource = deletionReasonsRemoteDataSource,
         _chatRemoteDataSource = chatRemoteDataSource,
         _referralRemoteDataSource = referralRemoteDataSource,
         _staticPagesRemoteDataSource = staticPagesRemoteDataSource,
@@ -76,10 +79,36 @@ class DashboardRepositoryImpl implements DashboardRepository {
   final AlertsRemoteDataSource _alertsRemoteDataSource;
   final AccountDeleteRequestsRemoteDataSource
       _accountDeleteRequestsRemoteDataSource;
+  final DeletionReasonsRemoteDataSource _deletionReasonsRemoteDataSource;
   final ChatRemoteDataSource _chatRemoteDataSource;
   final ReferralRemoteDataSource _referralRemoteDataSource;
   final StaticPagesRemoteDataSource _staticPagesRemoteDataSource;
   final AuthRepository _authRepository;
+
+  @override
+  Future<Either<Failure, List<String>>> getDeletionReasons() async {
+    final bool isConnected = await _network.isConnected;
+    if (!isConnected) {
+      return left(const NetworkFailure('No internet connection'));
+    }
+
+    try {
+      final List<String> reasons =
+          await _deletionReasonsRemoteDataSource.getDeletionReasons();
+      return right(reasons);
+    } on ApiException catch (error) {
+      return left(APIFailure(error.message));
+    } on ServerException catch (error) {
+      return left(ServerFailure(error.message));
+    } catch (error, stackTrace) {
+      logError(
+        'Unexpected deletion reasons fetch failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return left(const ServerFailure('Unexpected error occurred'));
+    }
+  }
 
   @override
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>

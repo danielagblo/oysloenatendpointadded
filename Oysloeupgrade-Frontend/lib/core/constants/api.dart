@@ -66,6 +66,10 @@ class AppStrings {
       '$apiBasePath/account-delete-requests/$id/approve/';
   static String accountDeleteRequestRejectURL(String id) =>
       '$apiBasePath/account-delete-requests/$id/reject/';
+  
+  // Account deletion reasons (admin)
+  static const String accountDeletionReasonsURL =
+      '$apiBasePath/admin/deletion-reasons/';
 
   // Chat
   static const String chatRoomIdURL = '$apiBasePath/chatroomid/';

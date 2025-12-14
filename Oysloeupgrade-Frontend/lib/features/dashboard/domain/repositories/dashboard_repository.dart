@@ -145,6 +145,8 @@ abstract class DashboardRepository {
   Future<Either<Failure, List<AccountDeleteRequestEntity>>>
       getAccountDeleteRequests();
 
+  Future<Either<Failure, List<String>>> getDeletionReasons();
+
   Future<Either<Failure, AccountDeleteRequestEntity>>
       createAccountDeleteRequest({
     String? reason,

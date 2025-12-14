@@ -128,6 +128,9 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<AccountDeleteRequestsRemoteDataSource>(
       () => AccountDeleteRequestsRemoteDataSourceImpl(client: sl()),
     )
+    ..registerLazySingleton<DeletionReasonsRemoteDataSource>(
+      () => DeletionReasonsRemoteDataSourceImpl(client: sl()),
+    )
     ..registerLazySingleton<ChatRemoteDataSource>(
       () => ChatRemoteDataSourceImpl(client: sl()),
     )
@@ -147,6 +150,7 @@ Future<void> _initDashboard() async {
         categoriesLocalDataSource: sl(),
         alertsRemoteDataSource: sl(),
         accountDeleteRequestsRemoteDataSource: sl(),
+        deletionReasonsRemoteDataSource: sl(),
         chatRemoteDataSource: sl(),
         referralRemoteDataSource: sl(),
         staticPagesRemoteDataSource: sl(),
@@ -268,6 +272,9 @@ Future<void> _initDashboard() async {
     ..registerLazySingleton<GetAccountDeleteRequestsUseCase>(
       () => GetAccountDeleteRequestsUseCase(sl()),
     )
+    ..registerLazySingleton<GetDeletionReasonsUseCase>(
+      () => GetDeletionReasonsUseCase(sl()),
+    )
     ..registerLazySingleton<CreateAccountDeleteRequestUseCase>(
       () => CreateAccountDeleteRequestUseCase(sl()),
     )
@@ -331,6 +338,9 @@ Future<void> _initDashboard() async {
         sl<GetAccountDeleteRequestsUseCase>(),
         sl<CreateAccountDeleteRequestUseCase>(),
       ),
+    )
+    ..registerFactory<DeletionReasonsCubit>(
+      () => DeletionReasonsCubit(sl()),
     )
     ..registerFactory<ProfileCubit>(
       () => ProfileCubit(
