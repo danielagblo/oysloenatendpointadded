@@ -138,9 +138,12 @@ final List<RouteBase> routes = <RouteBase>[
         currentIndex = 4;
       }
 
-      return NavigationShell(
-        currentIndex: currentIndex,
-        child: child,
+      return BlocProvider(
+        create: (_) => sl<AlertsCubit>()..fetchAlerts(),
+        child: NavigationShell(
+          currentIndex: currentIndex,
+          child: child,
+        ),
       );
     },
     routes: [

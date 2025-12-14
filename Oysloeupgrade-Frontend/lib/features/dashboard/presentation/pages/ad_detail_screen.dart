@@ -1090,7 +1090,9 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
           _productOverride = updatedProduct;
         });
         if (updatedProduct.isFavourite) {
-          showSuccessSnackBar(context, 'Added to favorites');
+          showSuccessSnackBar(context, 'Liked');
+        } else {
+          showSuccessSnackBar(context, 'Unliked');
         }
 
         // That message should only appear when removing from favorites screen
@@ -1582,8 +1584,8 @@ class _AdDetailScreenState extends State<AdDetailScreen> {
                                 const SizedBox(width: 12),
                                 _actionChip(
                                   label: _product?.isFavourite == true
-                                      ? 'Favorited'
-                                      : 'Favorite',
+                                      ? 'Unlike'
+                                      : 'Like',
                                   svgAsset: _product?.isFavourite == true
                                       ? 'assets/icons/favorite.svg'
                                       : 'assets/icons/unfavorite.svg',

@@ -59,12 +59,14 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
   final _dailyDurationController = TextEditingController();
   final _weeklyDurationController = TextEditingController();
   final _monthlyDurationController = TextEditingController();
+  final _locationSearchController = TextEditingController();
 
   int? _selectedCategoryId;
   int? _selectedSubcategoryId;
   String _selectedPurpose = 'Sale';
-  String? _selectedRegion; // For Ad Area Location (region name)
-  int? _selectedLocationId; // For Ad Actual Map Location (location ID)
+  String? _selectedRegion; // Selected region (used to filter locations)
+  int? _selectedLocationId; // Selected location ID (final selection)
+  final ExpansionTileController _locationExpansionController = ExpansionTileController();
 
   // Maps to store dynamic feature values
   Map<int, String> _selectedFeatureValues = {};
@@ -99,6 +101,10 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
       final locationsCubit = context.read<LocationsCubit>();
       print('PostAdFormScreen: Calling LocationsCubit.fetch()');
       locationsCubit.fetch();
+      // If editing and location is set, filter locations by region
+      if (_isEditMode && _selectedRegion != null) {
+        locationsCubit.filterByRegion(_selectedRegion!);
+      }
       if (_isEditMode && _selectedCategoryId != null) {
         context.read<SubcategoriesCubit>().fetch(categoryId: _selectedCategoryId);
       }
@@ -116,7 +122,9 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
       case 'RENT':
         return 'Rent';
       case 'PAYLATER':
-        return 'PayLater';
+      case 'HIGH_PURCHASE':
+        // Map PayLater to Sale as fallback for existing data
+        return 'Sale';
       default:
         return 'Sale';
     }
@@ -138,6 +146,7 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
     _dailyDurationController.dispose();
     _weeklyDurationController.dispose();
     _monthlyDurationController.dispose();
+    _locationSearchController.dispose();
     // Dispose feature controllers
     for (var controller in _featureControllers.values) {
       controller.dispose();
@@ -162,131 +171,6 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
             }
             return null;
           },
-        );
-
-      case 'PayLater':
-        return Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: AdInput(
-                    controller: _dailyPriceController,
-                    labelText: 'Daily',
-                    hintText: '₵',
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Required';
-                      }
-                      if (double.tryParse(value.trim()) == null) {
-                        return 'Invalid';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(width: 4.w),
-                Expanded(
-                  child: AdEditableDropdown(
-                    controller: _dailyDurationController,
-                    hintText: 'Duration',
-                    items: [
-                      '1 Week',
-                      '2 Weeks',
-                      '1 Month',
-                      '3 Months',
-                      '6 Months'
-                    ],
-                    onChanged: (value) {
-                      // Value is already set in the controller
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 3.h),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: AdInput(
-                    controller: _weeklyPriceController,
-                    labelText: 'Weekly',
-                    hintText: '₵',
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Required';
-                      }
-                      if (double.tryParse(value.trim()) == null) {
-                        return 'Invalid';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(width: 4.w),
-                Expanded(
-                  child: AdEditableDropdown(
-                    controller: _weeklyDurationController,
-                    hintText: 'Duration',
-                    items: [
-                      '1 Week',
-                      '2 Weeks',
-                      '1 Month',
-                      '3 Months',
-                      '6 Months'
-                    ],
-                    onChanged: (value) {
-                      // Value is already set in the controller
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 3.h),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: AdInput(
-                    controller: _monthlyPriceController,
-                    labelText: 'Monthly',
-                    hintText: '₵',
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Required';
-                      }
-                      if (double.tryParse(value.trim()) == null) {
-                        return 'Invalid';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(width: 4.w),
-                Expanded(
-                  child: AdEditableDropdown(
-                    controller: _monthlyDurationController,
-                    hintText: 'Duration',
-                    items: [
-                      '1 Week',
-                      '2 Weeks',
-                      '1 Month',
-                      '3 Months',
-                      '6 Months'
-                    ],
-                    onChanged: (value) {
-                      // Value is already set in the controller
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
         );
 
       case 'Rent':
@@ -541,23 +425,46 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                   children: [
                     _buildPurposeOption('Sale'),
                     SizedBox(width: 4.w),
-                    _buildPurposeOption('PayLater'),
-                    SizedBox(width: 4.w),
                     _buildPurposeOption('Rent'),
                   ],
                 ),
                 SizedBox(height: 3.h),
                 _buildPriceSection(),
                 SizedBox(height: 3.h),
-                // Ad Area Location (Regions)
+                // Ad Area Location (Hierarchical: Regions -> Expandable Locations)
                 BlocBuilder<LocationsCubit, LocationsState>(
                   builder: (context, locationsState) {
+                    // Filter locations based on search query
+                    final String searchQuery = _locationSearchController.text.toLowerCase().trim();
+                    final filteredLocations = _selectedRegion != null && locationsState.hasSubLocations
+                        ? (searchQuery.isEmpty
+                            ? locationsState.subLocations
+                            : locationsState.subLocations
+                                .where((loc) => loc.name.toLowerCase().contains(searchQuery))
+                                .toList())
+                        : <LocationEntity>[];
+
+                    // Get selected location name for display
+                    String? selectedLocationName;
+                    if (_selectedLocationId != null && locationsState.hasSubLocations) {
+                      final selectedLoc = locationsState.subLocations
+                          .firstWhere(
+                            (loc) => loc.id == _selectedLocationId,
+                            orElse: () => LocationEntity(
+                              id: _selectedLocationId!,
+                              name: '',
+                            ),
+                          );
+                      selectedLocationName = selectedLoc.name.isNotEmpty ? selectedLoc.name : null;
+                    }
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AdDropdown(
+                        // Region Dropdown
+                        AdDropdown<String>(
                           labelText: 'Ad Area Location',
-                          hintText: 'Select region',
+                          hintText: 'Select location',
                           value: _selectedRegion,
                           items: locationsState.regions
                               .map((region) => DropdownMenuItem<String>(
@@ -567,19 +474,198 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                               .toList(),
                           enabled: locationsState.hasRegions,
                           onChanged: (String? value) {
-                            if (!locationsState.hasRegions) return;
+                            if (value == null) return;
                             setState(() {
                               _selectedRegion = value;
                               _selectedLocationId = null;
+                              _locationSearchController.clear();
                             });
-                            if (value != null) {
-                              context
-                                  .read<LocationsCubit>()
-                                  .filterByRegion(value);
-                            }
+                            // Filter locations by region
+                            context.read<LocationsCubit>().filterByRegion(value);
+                            // Expand the location selection after region is selected
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _locationExpansionController.expand();
+                            });
                           },
                         ),
-                        if (locationsState.isLoading)
+                        // Expandable Locations Section
+                        if (_selectedRegion != null && locationsState.hasSubLocations) ...[
+                          SizedBox(height: 2.h),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.grayD9,
+                                width: 1,
+                              ),
+                            ),
+                            child: ExpansionTile(
+                              controller: _locationExpansionController,
+                              initiallyExpanded: _selectedLocationId == null,
+                              tilePadding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                              childrenPadding: EdgeInsets.only(bottom: 1.h),
+                              title: Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    size: 18,
+                                    color: AppColors.blueGray374957,
+                                  ),
+                                  SizedBox(width: 2.w),
+                                  Expanded(
+                                    child: Text(
+                                      selectedLocationName ?? 'Select location in $_selectedRegion',
+                                      style: AppTypography.body.copyWith(
+                                        color: _selectedLocationId != null
+                                            ? AppColors.blueGray374957
+                                            : AppColors.gray8B959E,
+                                        fontWeight: _selectedLocationId != null
+                                            ? FontWeight.w500
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: Icon(
+                                _locationExpansionController.isExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: AppColors.blueGray374957,
+                              ),
+                              children: [
+                                // Search field
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 4.w),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.grayF9,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: AppColors.grayD9,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: TextField(
+                                      controller: _locationSearchController,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          // Trigger rebuild to filter locations
+                                        });
+                                      },
+                                      style: AppTypography.body.copyWith(
+                                        color: AppColors.blueGray374957,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: 'Search locations...',
+                                        hintStyle: AppTypography.body.copyWith(
+                                          color: AppColors.gray8B959E,
+                                        ),
+                                        prefixIcon: Icon(
+                                          Icons.search,
+                                          color: AppColors.gray8B959E,
+                                          size: 20,
+                                        ),
+                                        suffixIcon: _locationSearchController.text.isNotEmpty
+                                            ? IconButton(
+                                                icon: Icon(
+                                                  Icons.clear,
+                                                  color: AppColors.gray8B959E,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _locationSearchController.clear();
+                                                  });
+                                                },
+                                              )
+                                            : null,
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 4.w,
+                                          vertical: 1.5.h,
+                                        ),
+                                        isDense: true,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 1.h),
+                                // Locations list
+                                if (filteredLocations.isEmpty && searchQuery.isNotEmpty)
+                                  Padding(
+                                    padding: EdgeInsets.all(4.w),
+                                    child: Text(
+                                      'No locations found matching "$searchQuery"',
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.gray8B959E,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(maxHeight: 40.h),
+                                    child: ListView.separated(
+                                      shrinkWrap: true,
+                                      itemCount: filteredLocations.length,
+                                      separatorBuilder: (_, __) => Divider(
+                                        height: 1,
+                                        thickness: 1,
+                                        color: AppColors.grayE4,
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final location = filteredLocations[index];
+                                        final isSelected = _selectedLocationId == location.id;
+                                        return InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedLocationId = location.id;
+                                              _locationSearchController.clear();
+                                            });
+                                            // Collapse the ExpansionTile after selection
+                                            _locationExpansionController.collapse();
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 4.w,
+                                              vertical: 1.5.h,
+                                            ),
+                                            color: isSelected
+                                                ? AppColors.grayF9
+                                                : Colors.transparent,
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    location.name,
+                                                    style: AppTypography.body.copyWith(
+                                                      color: AppColors.blueGray374957,
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.w500
+                                                          : FontWeight.normal,
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (isSelected)
+                                                  Icon(
+                                                    Icons.check_circle,
+                                                    color: AppColors.primary,
+                                                    size: 20,
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        // Loading and error states
+                        if (locationsState.isLoading && _selectedRegion == null)
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Row(
@@ -599,19 +685,37 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                               ],
                             ),
                           )
+                        else if (locationsState.isLoading && _selectedRegion != null)
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                SizedBox(width: 2.w),
+                                Text(
+                                  'Loading locations...',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.gray8B959E,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
                         else if (locationsState.hasError)
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Row(
                               children: [
-                                Icon(Icons.error_outline, 
-                                  color: Colors.red, 
-                                  size: 16,
-                                ),
+                                Icon(Icons.error_outline,
+                                    color: Colors.red, size: 16),
                                 SizedBox(width: 2.w),
                                 Expanded(
                                   child: Text(
-                                    'Unable to load regions: ${locationsState.message ?? "Unknown error"}',
+                                    'Unable to load: ${locationsState.message ?? "Unknown error"}',
                                     style: AppTypography.bodySmall.copyWith(
                                       color: Colors.red,
                                     ),
@@ -620,11 +724,24 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                               ],
                             ),
                           )
-                        else if (!locationsState.hasRegions && locationsState.status == LocationsStatus.success)
+                        else if (_selectedRegion == null &&
+                            !locationsState.hasRegions &&
+                            locationsState.status == LocationsStatus.success)
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
                               'No regions available. Please contact support.',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.gray8B959E,
+                              ),
+                            ),
+                          )
+                        else if (_selectedRegion != null &&
+                            !locationsState.hasSubLocations)
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'No locations available for selected region',
                               style: AppTypography.bodySmall.copyWith(
                                 color: AppColors.gray8B959E,
                               ),
@@ -651,50 +768,6 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
                       ),
                     ),
                   ],
-                ),
-                SizedBox(height: 3.h),
-                // Ad Actual Map Location (Locations within selected region)
-                BlocBuilder<LocationsCubit, LocationsState>(
-                  builder: (context, locationsState) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AdDropdown<int>(
-                          labelText: 'Ad Actual Map Location',
-                          hintText: _selectedRegion == null
-                              ? 'Select region first'
-                              : 'Select specific location',
-                          value: _selectedLocationId,
-                          items: locationsState.subLocations
-                              .map((loc) => DropdownMenuItem<int>(
-                                    value: loc.id,
-                                    child: Text(loc.name),
-                                  ))
-                              .toList(),
-                          enabled: _selectedRegion != null &&
-                              locationsState.hasSubLocations,
-                          onChanged: (int? value) {
-                            if (_selectedRegion == null ||
-                                !locationsState.hasSubLocations) return;
-                            setState(() {
-                              _selectedLocationId = value;
-                            });
-                          },
-                        ),
-                        if (_selectedRegion != null &&
-                            !locationsState.hasSubLocations)
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              'No locations available for selected region',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.gray8B959E,
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
                 ),
                 SizedBox(height: 3.h),
                 Text(
@@ -935,57 +1008,40 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
       return;
     }
 
-    // Validate price based on purpose type
-    if (_selectedPurpose == 'PayLater') {
-      // For PayLater, validate all three price fields
-      if (_dailyPriceController.text.trim().isEmpty ||
-          _weeklyPriceController.text.trim().isEmpty ||
-          _monthlyPriceController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill in all price fields (Daily, Weekly, Monthly)'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      if (double.tryParse(_dailyPriceController.text.trim()) == null ||
-          double.tryParse(_weeklyPriceController.text.trim()) == null ||
-          double.tryParse(_monthlyPriceController.text.trim()) == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter valid prices for all fields'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-    } else {
-      // For Sale and Rent, validate single price field
-      if (_priceController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Price is required'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      if (double.tryParse(_priceController.text.trim()) == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter a valid price'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+    // Validate price for Sale and Rent
+    if (_priceController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Price is required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (double.tryParse(_priceController.text.trim()) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid price'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a product category'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedLocationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a location'),
           backgroundColor: Colors.red,
         ),
       );
@@ -1063,8 +1119,6 @@ class _PostAdFormScreenState extends State<PostAdFormScreen> {
     switch (purpose) {
       case 'Rent':
         return 'RENT';
-      case 'PayLater':
-        return 'HIGH_PURCHASE';
       case 'Sale':
       default:
         return 'SALE';

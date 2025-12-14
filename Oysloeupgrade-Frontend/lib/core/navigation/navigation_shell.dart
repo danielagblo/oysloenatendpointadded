@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:oysloe_mobile/core/common/widgets/app_snackbar.dart';
 import 'package:oysloe_mobile/core/di/dependency_injection.dart';
 import 'package:oysloe_mobile/core/navigation/navigation_state.dart';
 import 'package:oysloe_mobile/core/routes/routes.dart';
 import 'package:oysloe_mobile/features/auth/domain/repositories/auth_repository.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/alerts/alerts_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/alerts/alerts_state.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/bottom_navigation.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/profile_menu_drawer.dart';
 
@@ -132,12 +135,22 @@ class _NavigationShellState extends State<NavigationShell> {
             }
           });
         },
-        bottomNavigationBar: ListenableBuilder(
-          listenable: _navigationState,
-          builder: (context, _) {
-            return CustomBottomNavigation(
-              currentIndex: _forcedIndex ?? widget.currentIndex,
-              onTap: (index) => _onTabTapped(index),
+        bottomNavigationBar: BlocBuilder<AlertsCubit, AlertsState>(
+          builder: (context, alertsState) {
+            // Calculate unread alerts count
+            final int unreadCount = alertsState.alerts
+                .where((alert) => !alert.isRead)
+                .length;
+
+            return ListenableBuilder(
+              listenable: _navigationState,
+              builder: (context, _) {
+                return CustomBottomNavigation(
+                  currentIndex: _forcedIndex ?? widget.currentIndex,
+                  onTap: (index) => _onTabTapped(index),
+                  unreadAlertsCount: unreadCount,
+                );
+              },
             );
           },
         ),

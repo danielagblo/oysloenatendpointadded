@@ -45,6 +45,7 @@ import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/ca
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/subcategories/subcategories_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/features/features_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/alerts/alerts_cubit.dart';
 import 'package:oysloe_mobile/features/onboarding/presentation/pages/splash_screen.dart';
 import 'package:oysloe_mobile/features/onboarding/presentation/pages/onboarding_flow.dart';
 

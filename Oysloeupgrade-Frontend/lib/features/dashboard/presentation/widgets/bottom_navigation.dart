@@ -8,11 +8,13 @@ class CustomBottomNavigation extends StatelessWidget {
   static const double barHeight = 78;
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final int unreadAlertsCount;
 
   const CustomBottomNavigation({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.unreadAlertsCount = 0,
   });
 
   @override
@@ -46,6 +48,7 @@ class CustomBottomNavigation extends StatelessWidget {
                   index: 1,
                   iconPath: 'assets/icons/alert.svg',
                   label: 'Alerts',
+                  badgeCount: unreadAlertsCount > 0 ? unreadAlertsCount : null,
                 ),
                 _buildNavItem(
                   context: context,
@@ -78,6 +81,7 @@ class CustomBottomNavigation extends StatelessWidget {
     required int index,
     required String iconPath,
     required String label,
+    int? badgeCount,
   }) {
     final isSelected = currentIndex == index;
 
@@ -100,7 +104,42 @@ class CustomBottomNavigation extends StatelessWidget {
             ),
           ),
           SizedBox(height: 3),
-          SvgPicture.asset(iconPath, width: 20, height: 20),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SvgPicture.asset(iconPath, width: 20, height: 20),
+              if (badgeCount != null && badgeCount > 0)
+                Positioned(
+                  right: -6,
+                  top: -6,
+                  child: Container(
+                    padding: badgeCount > 9
+                        ? const EdgeInsets.symmetric(horizontal: 4, vertical: 2)
+                        : const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF3B30), // Red color for badge
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Center(
+                      child: Text(
+                        badgeCount > 99 ? '99+' : badgeCount.toString(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          height: 1.0,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 3),
           Text(label, style: AppTypography.bodySmall),
         ],

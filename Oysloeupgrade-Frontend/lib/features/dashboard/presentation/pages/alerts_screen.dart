@@ -19,10 +19,11 @@ class AlertsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<AlertsCubit>()..fetchAlerts(),
-      child: const _AlertsView(),
-    );
+    // Use existing AlertsCubit from NavigationShell if available
+    final existingCubit = context.read<AlertsCubit>();
+    // Ensure alerts are fetched (in case they haven't been yet)
+    existingCubit.fetchAlerts();
+    return const _AlertsView();
   }
 }
 

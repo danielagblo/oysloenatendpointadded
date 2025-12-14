@@ -19,12 +19,10 @@ Future<void> main() async {
       ]);
 
       SystemChrome.setSystemUIOverlayStyle(
-        SystemUiOverlayStyle(
-          systemNavigationBarColor: AppColors.white,
-          systemNavigationBarIconBrightness:
-              AppColors.white.computeLuminance() > 0.5
-                  ? Brightness.dark
-                  : Brightness.light,
+        const SystemUiOverlayStyle(
+          systemNavigationBarColor: Colors.white,
+          systemNavigationBarIconBrightness: Brightness.dark,
+          systemNavigationBarDividerColor: Colors.transparent,
         ),
       );
 
@@ -43,12 +41,19 @@ class OyesloeMobile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ResponsiveSizer(
       builder: (context, orientation, screenType) {
-        return MaterialApp.router(
-          title: 'Oysloe Mobile',
-          debugShowCheckedModeBanner: false,
-          theme: buildAppTheme(Brightness.light),
-          darkTheme: buildAppTheme(Brightness.dark),
-          routerConfig: appRouter,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            systemNavigationBarColor: Colors.white,
+            systemNavigationBarIconBrightness: Brightness.dark,
+            systemNavigationBarDividerColor: Colors.transparent,
+          ),
+          child: MaterialApp.router(
+            title: 'Oysloe Mobile',
+            debugShowCheckedModeBanner: false,
+            theme: buildAppTheme(Brightness.light),
+            darkTheme: buildAppTheme(Brightness.dark),
+            routerConfig: appRouter,
+          ),
         );
       },
     );
