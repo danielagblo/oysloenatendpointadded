@@ -23,9 +23,11 @@ class SubcategoriesRemoteDataSourceImpl
   Future<List<SubcategoryModel>> getSubcategories({int? categoryId}) async {
     try {
       final queryParams = categoryId != null ? {'category': categoryId} : null;
+      print('Fetching subcategories with categoryId=$categoryId, queryParams=$queryParams');
       final Response<dynamic> response =
           await _client.get<dynamic>(endpoint, queryParameters: queryParams);
       final dynamic data = response.data;
+      print('Subcategories API response: ${data is List ? data.length : 'not a list'} items');
 
       if (data is List<dynamic>) {
         return data

@@ -15,7 +15,12 @@ import 'package:oysloe_mobile/features/dashboard/domain/entities/product_entity.
 import 'package:oysloe_mobile/features/dashboard/domain/entities/category_entity.dart';
 
 class FilterBottomSheet extends StatefulWidget {
-  const FilterBottomSheet({super.key});
+  final ScrollController? scrollController;
+  
+  const FilterBottomSheet({
+    super.key,
+    this.scrollController,
+  });
 
   @override
   State<FilterBottomSheet> createState() => _FilterBottomSheetState();
@@ -28,6 +33,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   static List<String> _selectedSubcategories = [];
   static String? _selectedRegion;
   static List<String> _selectedAreas = [];
+  
+  // Key to force BlocBuilder rebuild when filters change
+  int _filterKey = 0;
 
   late TextEditingController _minPriceController;
   late TextEditingController _maxPriceController;
@@ -58,7 +66,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       _selectedAreas = [];
       _priceRange = const RangeValues(0, 1000000);
       _minPriceController.text = '0';
-      _maxPriceController.text = '1,000,000.00';
+      _maxPriceController.text = '1000000.00';
+      _filterKey++; // Force BlocBuilder to rebuild
     });
   }
 
@@ -84,10 +93,23 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       // Filter by location/areas
       if (_selectedAreas.isNotEmpty) {
         final productLocation = product.location?.label?.toLowerCase() ?? '';
+        final productName = product.location?.name?.toLowerCase() ?? '';
         final matchesArea = _selectedAreas.any(
-          (area) => productLocation.contains(area.toLowerCase()),
+          (area) {
+            final areaLower = area.toLowerCase();
+            return productLocation.contains(areaLower) || 
+                   productName.contains(areaLower);
+          },
         );
         if (!matchesArea) return false;
+      }
+      
+      // Also filter by region if region is selected but no areas
+      if (_selectedRegion != null && _selectedAreas.isEmpty) {
+        final productRegion = product.location?.region?.toLowerCase() ?? '';
+        if (productRegion != _selectedRegion!.toLowerCase()) {
+          return false;
+        }
       }
 
       // Filter by price range
@@ -158,15 +180,15 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           // Scrollable content
           Flexible(
             child: SingleChildScrollView(
+              controller: widget.scrollController,
               padding: EdgeInsets.symmetric(horizontal: 4.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildFilterRow(
                     'Category',
-                    _selectedSubcategories.isNotEmpty
-                        ? '$_selectedCategory ($_selectedSubcategories.length)'
-                        : _selectedCategory,
+                    category: _selectedCategory,
+                    subcategories: _selectedSubcategories,
                     onTap: () async {
                       // Show category sheet on top
                       final result = await showCategorySelectSheet(
@@ -177,6 +199,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           setState(() {
                             _selectedCategory = category;
                             _selectedSubcategories = subcategories;
+                            _filterKey++; // Force count recalculation
                           });
                         },
                       );
@@ -186,6 +209,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           _selectedCategory = result;
                           // Clear subcategories when category changes
                           _selectedSubcategories = [];
+                          _filterKey++; // Force count recalculation
                         });
                       }
                     },
@@ -193,9 +217,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   _buildDivider(),
                   _buildFilterRow(
                     'Locations',
-                    _selectedAreas.isNotEmpty
-                        ? '$_selectedRegion ($_selectedAreas.length)'
-                        : _selectedRegion,
+                    region: _selectedRegion,
+                    areas: _selectedAreas,
                     onTap: () async {
                       // Show region selection sheet
                       await showRegionSelectSheet(
@@ -204,6 +227,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           setState(() {
                             _selectedRegion = region;
                             _selectedAreas = areas;
+                            _filterKey++; // Force count recalculation
                           });
                         },
                       );
@@ -236,6 +260,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                             values.start.toInt().toString();
                         _maxPriceController.text =
                             values.end.toStringAsFixed(2);
+                        _filterKey++; // Force count recalculation
                       });
                     },
                   ),
@@ -296,11 +321,14 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 SizedBox(width: 3.w),
                 Expanded(
                   flex: 2,
-                  child: BlocBuilder<ProductsCubit, ProductsState>(
-                    builder: (context, productsState) {
-                      return BlocBuilder<CategoriesCubit, CategoriesState>(
-                        builder: (context, categoriesState) {
-                          int count = 0;
+                  child: Builder(
+                    key: ValueKey(_filterKey),
+                    builder: (context) {
+                      return BlocBuilder<ProductsCubit, ProductsState>(
+                        builder: (context, productsState) {
+                          return BlocBuilder<CategoriesCubit, CategoriesState>(
+                            builder: (context, categoriesState) {
+                              int count = 0;
                           if (productsState.hasData &&
                               categoriesState.hasData) {
                             count = _getFilteredProductsCount(
@@ -339,6 +367,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                               ),
                             ),
                           );
+                            },
+                          );
                         },
                       );
                     },
@@ -352,31 +382,34 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     );
   }
 
-  Widget _buildFilterRow(String label, String? value, {VoidCallback? onTap}) {
+  Widget _buildFilterRow(
+    String label, {
+    String? category,
+    List<String>? subcategories,
+    String? region,
+    List<String>? areas,
+    VoidCallback? onTap,
+  }) {
+    final hasCategorySelection = category != null;
+    final hasLocationSelection = region != null && areas != null && areas.isNotEmpty;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 1.5.h),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: AppTypography.body.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.blueGray374957,
-              ),
-            ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (value != null)
-                  Text(
-                    value,
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.gray8B959E,
-                    ),
+                Text(
+                  label,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blueGray374957,
                   ),
-                SizedBox(width: 2.w),
+                ),
                 Icon(
                   Icons.chevron_right,
                   color: AppColors.gray8B959E,
@@ -384,8 +417,56 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 ),
               ],
             ),
+            if (hasCategorySelection || hasLocationSelection) ...[
+              SizedBox(height: 1.h),
+              Wrap(
+                spacing: 1.w,
+                runSpacing: 0.8.h,
+                children: [
+                  if (hasCategorySelection) ...[
+                    _buildChip(category),
+                    if (subcategories != null && subcategories.isNotEmpty)
+                      ...subcategories.take(3).map((sub) => _buildChip(sub)),
+                    if (subcategories != null && subcategories.length > 3)
+                      _buildChip('+${subcategories.length - 3} more'),
+                  ],
+                  if (hasLocationSelection) ...[
+                    _buildChip(region!),
+                    if (areas.length <= 3)
+                      ...areas.map((area) => _buildChip(area))
+                    else ...[
+                      ...areas.take(2).map((area) => _buildChip(area)),
+                      _buildChip('+${areas.length - 2} more'),
+                    ],
+                  ],
+                ],
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildChip(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 0.8.h),
+      decoration: BoxDecoration(
+        color: AppColors.grayF9,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.grayD9,
+          width: 1,
+        ),
+      ),
+      child: Text(
+        text,
+        style: AppTypography.bodySmall.copyWith(
+          color: AppColors.blueGray374957,
+          fontWeight: FontWeight.w500,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -445,10 +526,14 @@ Future<Map<String, dynamic>?> showFilterBottomSheet(BuildContext context) {
         BlocProvider.value(value: locationsCubit),
       ],
       child: DraggableScrollableSheet(
-        initialChildSize: 0.55,
-        minChildSize: 0.4,
-        maxChildSize: 0.75,
-        builder: (context, scrollController) => const FilterBottomSheet(),
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.95,
+        snap: true,
+        snapSizes: const [0.3, 0.6, 0.95],
+        builder: (context, scrollController) => FilterBottomSheet(
+          scrollController: scrollController,
+        ),
       ),
     ),
   );

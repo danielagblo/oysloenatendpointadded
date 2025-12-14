@@ -111,151 +111,84 @@ class _RegionSelectSheetState extends State<RegionSelectSheet> {
                   );
                 }
 
-                // Group locations by region
-                final locationsByRegion = <String, List<LocationEntity>>{};
+                // Get unique regions
+                final regions = <String>{};
                 for (final location in state.locations) {
-                  final region = location.region ?? 'Other';
-                  locationsByRegion.putIfAbsent(region, () => []).add(location);
+                  if (location.region != null && location.region!.isNotEmpty) {
+                    regions.add(location.region!);
+                  }
                 }
+                final sortedRegions = regions.toList()..sort();
 
-                // Calculate total locations count
-                final totalLocationsCount = state.locations.length;
-
-                return SingleChildScrollView(
+                return ListView.separated(
+                  shrinkWrap: true,
                   padding: EdgeInsets.symmetric(horizontal: 4.w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Display each region group
-                      ...locationsByRegion.entries.map((entry) {
-                        final regionName = entry.key;
-                        final locations = entry.value;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 3.w, vertical: 1.h),
-                              decoration: BoxDecoration(
-                                color: AppColors.grayF9,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        AppColors.grayD9.withValues(alpha: 0.3),
-                                    blurRadius: 2,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                regionName,
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.gray8B959E,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 1.h),
-                            ...locations
-                                .map((location) => _buildRegionItem(location)),
-                            SizedBox(height: 2.h),
-                          ],
-                        );
-                      }),
-                    ],
+                  itemCount: sortedRegions.length,
+                  separatorBuilder: (context, index) => Divider(
+                    color: AppColors.grayE4,
+                    height: 1,
+                    thickness: 1,
                   ),
+                  itemBuilder: (context, index) {
+                    final regionName = sortedRegions[index];
+                    // Count locations in this region
+                    final regionLocationsCount = state.locations
+                        .where((loc) => loc.region == regionName)
+                        .length;
+
+                    return _buildRegionItem(regionName, regionLocationsCount);
+                  },
                 );
               },
             ),
           ),
 
-          // Bottom buttons
-          BlocBuilder<LocationsCubit, LocationsState>(
-            builder: (context, state) {
-              final totalLocationsCount = state.locations.length;
-              return Container(
-                padding: EdgeInsets.all(4.w),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  border: Border(
-                    top: BorderSide(
-                      color: AppColors.grayE4,
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          'Clear all',
-                          style: AppTypography.body.copyWith(
-                            color: AppColors.blueGray374957,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 3.w),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF142032),
-                          foregroundColor: AppColors.white,
-                          padding: EdgeInsets.symmetric(vertical: 1.8.h),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'View all ($totalLocationsCount)',
-                          style: AppTypography.body.copyWith(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildRegionItem(LocationEntity location) {
+  Widget _buildRegionItem(String regionName, int locationsCount) {
     return InkWell(
-      onTap: () {
-        // Directly select this location and close
-        if (widget.onAreasSelected != null) {
-          widget.onAreasSelected!(
-              location.region ?? location.name, [location.name]);
-        }
+      onTap: () async {
+        // Close region sheet first
         Navigator.pop(context);
+        // Show area selection sheet for this region
+        final selectedAreas = await showAreaSelectSheet(
+          context,
+          regionName: regionName,
+        );
+        if (selectedAreas != null && selectedAreas.isNotEmpty) {
+          // Notify parent about areas selection
+          if (widget.onAreasSelected != null) {
+            widget.onAreasSelected!(regionName, selectedAreas);
+          }
+        }
       },
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 1.5.h),
+        padding: EdgeInsets.symmetric(vertical: 1.8.h),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: Text(
-                location.name,
-                style: AppTypography.body.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.blueGray374957,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    regionName,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.blueGray374957,
+                    ),
+                  ),
+                  SizedBox(height: 0.3.h),
+                  Text(
+                    '$locationsCount locations',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.gray8B959E,
+                    ),
+                  ),
+                ],
               ),
             ),
             Icon(

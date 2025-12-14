@@ -19,6 +19,11 @@ abstract class DashboardRepository {
     String? search,
     String? ordering,
     int? sellerId,
+    int? category,
+    int? location,
+    String? region,
+    double? priceMin,
+    double? priceMax,
   });
 
   Future<Either<Failure, List<ProductEntity>>> getUserProducts();

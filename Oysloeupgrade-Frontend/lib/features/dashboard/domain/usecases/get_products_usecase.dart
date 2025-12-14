@@ -10,14 +10,33 @@ class GetProductsParams extends Equatable {
     this.search,
     this.ordering,
     this.sellerId,
+    this.category,
+    this.location,
+    this.region,
+    this.priceMin,
+    this.priceMax,
   });
 
   final String? search;
   final String? ordering;
   final int? sellerId;
+  final int? category;
+  final int? location;
+  final String? region;
+  final double? priceMin;
+  final double? priceMax;
 
   @override
-  List<Object?> get props => <Object?>[search, ordering, sellerId];
+  List<Object?> get props => <Object?>[
+        search,
+        ordering,
+        sellerId,
+        category,
+        location,
+        region,
+        priceMin,
+        priceMax,
+      ];
 }
 
 class GetProductsUseCase {
@@ -32,6 +51,11 @@ class GetProductsUseCase {
       search: params.search,
       ordering: params.ordering,
       sellerId: params.sellerId,
+      category: params.category,
+      location: params.location,
+      region: params.region,
+      priceMin: params.priceMin,
+      priceMax: params.priceMax,
     );
   }
 }

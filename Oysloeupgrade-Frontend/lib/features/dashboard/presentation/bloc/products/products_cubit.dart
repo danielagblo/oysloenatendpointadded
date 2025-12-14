@@ -14,6 +14,11 @@ class ProductsCubit extends Cubit<ProductsState> {
   Future<void> fetch({
     String? search,
     String? ordering,
+    int? category,
+    int? location,
+    String? region,
+    double? priceMin,
+    double? priceMax,
   }) async {
     emit(
       state.copyWith(
@@ -23,7 +28,15 @@ class ProductsCubit extends Cubit<ProductsState> {
     );
 
     final result = await _getProducts(
-      GetProductsParams(search: search, ordering: ordering),
+      GetProductsParams(
+        search: search,
+        ordering: ordering,
+        category: category,
+        location: location,
+        region: region,
+        priceMin: priceMin,
+        priceMax: priceMax,
+      ),
     );
 
     result.fold(

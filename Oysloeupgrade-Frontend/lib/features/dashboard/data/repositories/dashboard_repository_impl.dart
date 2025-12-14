@@ -425,6 +425,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
     String? search,
     String? ordering,
     int? sellerId,
+    int? category,
+    int? location,
+    String? region,
+    double? priceMin,
+    double? priceMax,
   }) async {
     final bool isConnected = await _network.isConnected;
     if (!isConnected) {
@@ -436,6 +441,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
         search: search,
         ordering: ordering,
         sellerId: sellerId,
+        category: category,
+        location: location,
+        region: region,
+        priceMin: priceMin,
+        priceMax: priceMax,
       ))
           .cast<ProductEntity>();
       return right(products);

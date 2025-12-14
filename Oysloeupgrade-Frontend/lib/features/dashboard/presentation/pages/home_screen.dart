@@ -12,6 +12,9 @@ import 'package:oysloe_mobile/features/dashboard/presentation/widgets/bottom_nav
 import 'package:oysloe_mobile/core/routes/routes.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/products/products_cubit.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/bloc/categories/categories_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/presentation/bloc/locations/locations_cubit.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/category_entity.dart';
+import 'package:oysloe_mobile/features/dashboard/domain/entities/location_entity.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:oysloe_mobile/features/dashboard/presentation/widgets/filter_bottom_sheet.dart';
 
@@ -292,13 +295,77 @@ class _AnimatedHomeScreenState extends State<AnimatedHomeScreen>
       setState(() {
         _activeFilters = filters;
       });
+      // Apply filters via API
+      await _applyFiltersToAPI(filters);
     }
+  }
+
+  Future<void> _applyFiltersToAPI(Map<String, dynamic> filters) async {
+    final productsCubit = context.read<ProductsCubit>();
+    final categoriesCubit = context.read<CategoriesCubit>();
+    
+    // Get category ID from category name
+    int? categoryId;
+    final selectedCategory = filters['category'] as String?;
+    if (selectedCategory != null && categoriesCubit.state.hasData) {
+      final category = categoriesCubit.state.categories.firstWhere(
+        (cat) => cat.name.toLowerCase() == selectedCategory.toLowerCase(),
+        orElse: () => const CategoryEntity(id: -1, name: ''),
+      );
+      if (category.id != -1) {
+        categoryId = category.id;
+      }
+    }
+    
+    // Use region for API filtering (API supports location__region parameter)
+    // If specific areas are selected, we still use the region for API filtering
+    // and let client-side filtering handle the specific area matching
+    final selectedRegion = filters['region'] as String?;
+    final selectedAreas = filters['areas'] as List<String>?;
+    
+    // If areas are selected but no region, try to get region from first area
+    String? regionForAPI = selectedRegion;
+    if ((regionForAPI == null || regionForAPI.isEmpty) && 
+        selectedAreas != null && 
+        selectedAreas.isNotEmpty) {
+      // Try to find region from the first selected area
+      final locationsCubit = context.read<LocationsCubit>();
+      if (!locationsCubit.state.hasData) {
+        await locationsCubit.fetch();
+      }
+      if (locationsCubit.state.hasData) {
+        final firstAreaName = selectedAreas.first;
+        final location = locationsCubit.state.locations.firstWhere(
+          (loc) => loc.name.toLowerCase() == firstAreaName.toLowerCase(),
+          orElse: () => const LocationEntity(id: 0, name: '', region: null),
+        );
+        if (location.region != null && location.region!.isNotEmpty) {
+          regionForAPI = location.region;
+        }
+      }
+    }
+    
+    final priceMin = filters['priceMin'] as double?;
+    final priceMax = filters['priceMax'] as double?;
+    
+    // Fetch products with API-level filters (region, category, price)
+    // Specific location filtering will be done client-side in ads_section.dart
+    print('Applying filters to API: category=$categoryId, region=$regionForAPI, priceMin=$priceMin, priceMax=$priceMax');
+    await productsCubit.fetch(
+      category: categoryId,
+      region: regionForAPI,
+      priceMin: priceMin,
+      priceMax: priceMax,
+    );
+    print('Products fetch completed');
   }
 
   void _clearFilters() {
     setState(() {
       _activeFilters = null;
     });
+    // Clear filters and refetch all products
+    context.read<ProductsCubit>().fetch();
   }
 }
 

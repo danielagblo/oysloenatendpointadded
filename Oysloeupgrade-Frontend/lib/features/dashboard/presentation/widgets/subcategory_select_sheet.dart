@@ -33,9 +33,12 @@ class _SubcategorySelectSheetState extends State<SubcategorySelectSheet> {
   void initState() {
     super.initState();
     _selectedItems = widget.selectedSubcategories ?? [];
+    _allSubcategories = [];
+    _filteredSubcategories = [];
     // Fetch subcategories when sheet opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SubcategoriesCubit>().fetch();
+      print('SubcategorySelectSheet: Fetching subcategories for categoryId=${widget.categoryId}');
+      context.read<SubcategoriesCubit>().fetch(categoryId: widget.categoryId);
     });
   }
 
@@ -192,10 +195,13 @@ class _SubcategorySelectSheetState extends State<SubcategorySelectSheet> {
                 }
 
                 if (state.hasData) {
-                  // Filter subcategories for the selected category
+                  // API should already filter by categoryId, but filter again client-side to be sure
+                  // This handles cases where API doesn't filter or returns all subcategories
                   final categorySubcategories = state.subcategories
                       .where((s) => s.categoryId == widget.categoryId)
                       .toList();
+
+                  print('Subcategories for categoryId=${widget.categoryId}: total=${state.subcategories.length}, filtered=${categorySubcategories.length}');
 
                   // Update local state with filtered data
                   WidgetsBinding.instance.addPostFrameCallback((_) {

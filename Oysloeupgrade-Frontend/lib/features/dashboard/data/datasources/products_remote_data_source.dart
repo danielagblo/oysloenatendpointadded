@@ -13,6 +13,11 @@ abstract class ProductsRemoteDataSource {
     String? search,
     String? ordering,
     int? sellerId,
+    int? category,
+    int? location,
+    String? region,
+    double? priceMin,
+    double? priceMax,
   });
 
   Future<ProductModel> getProductDetail(int id);
@@ -112,16 +117,29 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     String? search,
     String? ordering,
     int? sellerId,
+    int? category,
+    int? location,
+    String? region,
+    double? priceMin,
+    double? priceMax,
   }) async {
     try {
+      final queryParams = _buildQuery(
+        search: search,
+        ordering: ordering,
+        sellerId: sellerId,
+        category: category,
+        location: location,
+        region: region,
+        priceMin: priceMin,
+        priceMax: priceMax,
+      );
+      print('Fetching products from API with query params: $queryParams');
       final Response<dynamic> response = await _client.get<dynamic>(
         endpoint,
-        queryParameters: _buildQuery(
-          search: search,
-          ordering: ordering,
-          sellerId: sellerId,
-        ),
+        queryParameters: queryParams,
       );
+      print('Products API response received: ${response.data?.length ?? 0} items');
       return _parseProductList(response.data);
     } on DioException catch (error) {
       throw ApiException(ApiHelper.getHumanReadableMessage(error));
@@ -608,6 +626,11 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     String? search,
     String? ordering,
     int? sellerId,
+    int? category,
+    int? location,
+    String? region,
+    double? priceMin,
+    double? priceMax,
   }) {
     final Map<String, dynamic> query = <String, dynamic>{};
     if (search != null && search.isNotEmpty) {
@@ -618,6 +641,21 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     }
     if (sellerId != null) {
       query['owner'] = sellerId;
+    }
+    if (category != null) {
+      query['category'] = category;
+    }
+    if (location != null) {
+      query['location'] = location;
+    }
+    if (region != null && region.isNotEmpty) {
+      query['location__region'] = region;
+    }
+    if (priceMin != null) {
+      query['price__gte'] = priceMin;
+    }
+    if (priceMax != null) {
+      query['price__lte'] = priceMax;
     }
     return query.isEmpty ? null : query;
   }

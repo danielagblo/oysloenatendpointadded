@@ -106,25 +106,32 @@ class AdsSection extends StatelessWidget {
         if (category.id != -1 && product.category != category.id) {
           return false;
         }
-
-        // If subcategories are selected (for Electronics), filter by those
-        if (selectedSubcategories != null && selectedSubcategories.isNotEmpty) {
-          // Check if product's subcategory is in the selected list
-          // This assumes product has a subcategory field - adjust as needed
-          // For now, we'll allow products that match the main category
-        }
+        // Note: Subcategory filtering would require API support or subcategory field in ProductEntity
+        // For now, if subcategories are selected, we still show all products in that category
       }
 
       // Filter by location/areas
       final selectedAreas = activeFilters!['areas'] as List<String>?;
+      final selectedRegion = activeFilters!['region'] as String?;
 
       if (selectedAreas != null && selectedAreas.isNotEmpty) {
         // Check if product location matches any of the selected areas
         final productLocation = product.location?.label?.toLowerCase() ?? '';
+        final productName = product.location?.name?.toLowerCase() ?? '';
         final matchesArea = selectedAreas.any(
-          (area) => productLocation.contains(area.toLowerCase()),
+          (area) {
+            final areaLower = area.toLowerCase();
+            return productLocation.contains(areaLower) || 
+                   productName.contains(areaLower);
+          },
         );
         if (!matchesArea) {
+          return false;
+        }
+      } else if (selectedRegion != null) {
+        // If region is selected but no specific areas, filter by region
+        final productRegion = product.location?.region?.toLowerCase() ?? '';
+        if (productRegion != selectedRegion.toLowerCase()) {
           return false;
         }
       }

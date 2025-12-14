@@ -11,34 +11,46 @@ class SubcategoriesCubit extends Cubit<SubcategoriesState> {
   final GetSubcategoriesUseCase _getSubcategories;
 
   Future<void> fetch({int? categoryId}) async {
-    if (state.isLoading) return;
+    // Always fetch fresh data when categoryId changes
+    // This ensures we get subcategories for the specific category
+    print('SubcategoriesCubit.fetch() called with categoryId=$categoryId');
 
     emit(
       state.copyWith(
         status: SubcategoriesStatus.loading,
         resetMessage: true,
+        subcategories: const <SubcategoryEntity>[], // Clear previous data
       ),
     );
 
     final result = await _getSubcategories(
       GetSubcategoriesParams(categoryId: categoryId),
     );
-
+    
     result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: SubcategoriesStatus.failure,
-          subcategories: const <SubcategoryEntity>[],
-          message: failure.message,
-        ),
-      ),
-      (subcategories) => emit(
-        state.copyWith(
-          status: SubcategoriesStatus.success,
-          subcategories: subcategories,
-          resetMessage: true,
-        ),
-      ),
+      (failure) {
+        print('SubcategoriesCubit.fetch() failed: ${failure.message}');
+        emit(
+          state.copyWith(
+            status: SubcategoriesStatus.failure,
+            subcategories: const <SubcategoryEntity>[],
+            message: failure.message,
+          ),
+        );
+      },
+      (subcategories) {
+        print('SubcategoriesCubit.fetch() success: ${subcategories.length} subcategories received');
+        if (categoryId != null) {
+          print('Subcategories for categoryId=$categoryId: ${subcategories.map((s) => '${s.name} (catId: ${s.categoryId})').join(", ")}');
+        }
+        emit(
+          state.copyWith(
+            status: SubcategoriesStatus.success,
+            subcategories: subcategories,
+            resetMessage: true,
+          ),
+        );
+      },
     );
   }
 
